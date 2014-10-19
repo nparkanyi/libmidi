@@ -19,12 +19,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#include<glib.h>
+#include <glib.h>
 
 enum errors{
 	SUCCESS=0,
 	FILE_IO_ERROR,
 	FILE_INVALID
+};
+
+enum event_types{
+	EV_NOTE_OFF = 0x8,
+	EV_NOTE_ON,
+	EV_NOTE_AFTERTOUCH,
+	EV_CONTROLLER,
+	EV_PROGRAM_CHANGE,
+	EV_CHANNEL_AFTERTOUCH,
+	EV_PITCH_BEND,
+	EV_META = 0xFF
+};
+
+enum meta_types{
+	META_SEQUENCE_NUM,
+	META_TEXT,
+	META_COPYRIGHT,
+	META_NAME,
+	META_INSTRUMENT_NAME,
+	META_LYRICS,
+	META_MARKER,
+	META_CUE_POINT,
+	META_CHANNEL_PREFIX=0x20,
+	META_END_TRACK = 0x2F
 };
 
 typedef struct {
@@ -34,6 +58,15 @@ typedef struct {
 	guint16 num_tracks;
 	guint16 time_div;
 } MIDIHeader;
+
+typedef char EventType; 
+
+typedef struct {
+	EventType type;
+	//pointer to struct of type determined by event type
+	//for ghetto polymorphism 
+	char * data;
+} MIDIEvent;
 
 typedef struct {
 	char id[4];
