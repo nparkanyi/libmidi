@@ -19,15 +19,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+#ifndef MIDI_H
+#define MIDI_H
+
 #include <glib.h>
 
 enum errors{
-	SUCCESS=0,
+	SUCCESS,
 	FILE_IO_ERROR,
-	FILE_INVALID
+	FILE_INVALID,
+	VLV_ERROR
 };
 
-enum event_types{
+typedef enum {
 	EV_NOTE_OFF = 0x8,
 	EV_NOTE_ON,
 	EV_NOTE_AFTERTOUCH,
@@ -36,9 +40,9 @@ enum event_types{
 	EV_CHANNEL_AFTERTOUCH,
 	EV_PITCH_BEND,
 	EV_META = 0xFF
-};
+} EventType;
 
-enum meta_types{
+enum {
 	META_SEQUENCE_NUM,
 	META_TEXT,
 	META_COPYRIGHT,
@@ -49,7 +53,7 @@ enum meta_types{
 	META_CUE_POINT,
 	META_CHANNEL_PREFIX=0x20,
 	META_END_TRACK = 0x2F
-};
+} MetaType;
 
 typedef struct {
 	char id[4];
@@ -59,10 +63,9 @@ typedef struct {
 	guint16 time_div;
 } MIDIHeader;
 
-typedef char EventType; 
-
 typedef struct {
 	EventType type;
+	//MIDIEvent * next;
 	//pointer to struct of type determined by event type
 	//for ghetto polymorphism 
 	char * data;
@@ -77,14 +80,19 @@ typedef struct {
 	MIDITrackHeader header;
 	//track's events stored as linked list
 	MIDIEvent * head;
-}
+} MIDITrack;
 
 typedef struct {
 	FILE * file;
-
 	MIDIHeader header;
 } MIDIFile;
+
+//read in Variable Length Value used by some MIDI values
+//never larger than 4 bytes
+int VLV_read(FILE * buf, guint32 * val);
 
 int MIDIFile_load(MIDIFile * midi, const char * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
+
+#endif

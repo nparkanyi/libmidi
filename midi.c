@@ -22,6 +22,28 @@ THE SOFTWARE.
 #include <stdio.h>
 #include "midi.h"
 
+int VLV_read(FILE * buf, guint32 * val){
+	char byte;
+	int i;
+	
+	*val = 0x00;
+
+	for (i = 0; i < 4; i++){
+		if (fread(&byte, 1, 1, buf) != 1)
+			return FILE_IO_ERROR;
+
+		*val = ((*val << 7) | (byte % 128));
+
+		//is last byte?
+		if ((byte & 0x80) == 0x00){
+			return SUCCESS;
+		}
+	}	
+	//VLVs smaller than 4 bytes, should never reach here
+	return VLV_ERROR;
+}
+
+	
 int MIDIFile_load(MIDIFile * midi, const char * filename){
 	int r;
 
