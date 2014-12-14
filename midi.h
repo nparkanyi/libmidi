@@ -31,6 +31,7 @@ enum errors{
 	VLV_ERROR
 };
 
+//channel events
 typedef enum {
 	EV_NOTE_OFF = 0x8,
 	EV_NOTE_ON,
@@ -42,7 +43,8 @@ typedef enum {
 	EV_META = 0xFF
 } EventType;
 
-enum {
+//meta event types
+typedef enum {
 	META_SEQUENCE_NUM,
 	META_TEXT,
 	META_COPYRIGHT,
@@ -55,6 +57,50 @@ enum {
 	META_END_TRACK = 0x2F
 } MetaType;
 
+typedef enum {
+	CTR_BANK_SELECT;
+	CTR_MODULATION;
+	CTR_BREATH;
+	CTR_FOOT;
+	CTR_PORTAMENTO;
+	CTR_DATA_ENTRY;
+	CTR_VOLUME;
+	CTR_BALANCE;
+	CTR_PAN = 0x0A;
+	CTR_EXPRESSION;
+	CTR_EFFECT_1;
+	CTR_EFFECT_2;
+	CTR_GENERAL_1 = 0x10;
+	CTR_GENERAL_2;
+	CTR_GENERAL_3;
+	CTR_GENERAL_4;
+	//0x20 to 0x3F: LSB for controllers 0-31
+	CTR_DAMPER = 0x40;
+	CTR_PORTAMENTO;
+	CTR_SOSTENUTO;
+	CTR_SOFT;
+	CTR_LEGATO_FOOTSWITCH;
+	CTR_HOLD2;
+	//0x46 to 0x4F: sound controllers
+	CTR_GENERAL_5 = 0x50;
+	CTR_GENERAL_6;
+	CTR_GENERAL_7;
+	CTR_GENERAL_8;
+	CTR_PORTAMENTO_CONTROL;
+	CTR_EFFECT_1_DEPTH = 0x5B;
+	CTR_EFFECT_2_DEPTH;
+	CTR_EFFECT_3_DEPTH;
+	CTR_EFFECT_4_DEPTH;
+	CTR_EFFECT_5_DEPTH;
+	CTR_DATA_INCR;
+	CTR_DATA_DECR;
+	CTR_NON_REG_PARAM_LSB;
+	CTR_NON_REG_PARAM_MSB;
+	CTR_REG_PARAM_LSB;
+	CTR_REG_PARAM_MSB;
+	//0x79 to 0x7F: mode messages
+} ControllerType;
+
 typedef struct {
 	char id[4];
 	guint32 size;
@@ -63,13 +109,14 @@ typedef struct {
 	guint16 time_div;
 } MIDIHeader;
 
-typedef struct {
+struct _MIDIEvent{
 	EventType type;
-	//MIDIEvent * next;
+	struct _MIDIEvent * next;
 	//pointer to struct of type determined by event type
 	//for ghetto polymorphism 
 	char * data;
-} MIDIEvent;
+}; 
+typedef struct _MIDIEvent MIDIEvent;
 
 typedef struct {
 	char id[4];
@@ -94,5 +141,7 @@ int VLV_read(FILE * buf, guint32 * val);
 int MIDIFile_load(MIDIFile * midi, const char * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
+
+int MIDITrack_load(MIDITrack * track, FILE * file);
 
 #endif
