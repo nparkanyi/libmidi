@@ -80,3 +80,22 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
 	return SUCCESS;
 }
+
+int MIDITrack_load(MIDITrack * track, FILE * file){
+	int i;
+	char * name = "MTrk";
+
+	if (fread(&track->header, sizeof(MIDITrackHeader), 1, file) < 1)
+		return FILE_INVALID;
+
+	//swap endianness
+	track->header.size = GUINT32_FROM_BE(track->header.size);
+	
+	//if id is not "MTrk", not a track
+	for (i = 0; i < 4; i++){
+		if (track->header.id[i] != name[i])
+			return FILE_INVALID;
+	}
+
+	return SUCCESS;
+}
