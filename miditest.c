@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include "midi.h"
 
-int main(){
+int main(int argc, char * argv[]){
 	int r;
 	MIDIFile midi;
 
-	r = MIDIFile_load(&midi, "liz_et3.mid");
+	r = MIDIFile_load(&midi, argv[1]);
 	switch (r){
 		case FILE_IO_ERROR:
 			puts("ERROR: Failed to open file!");
@@ -15,9 +15,10 @@ int main(){
 			return 1;
 	}	
 
-	printf("\n%c %d %d %d\n",midi.header.id[0],
-			(int)midi.header.size, midi.header.format,
-			midi.header.num_tracks, midi.header.time_div);
+	printf("header size: %d\n", (int)midi.header.size);
+	printf("format: %d\n", midi.header.format);
+	printf("tracks: %d\n", midi.header.num_tracks);
+	printf("time div: %d\n", midi.header.time_div);
 
 	fclose(midi.file);
 	return 0;
