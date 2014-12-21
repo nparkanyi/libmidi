@@ -111,6 +111,7 @@ typedef struct {
 
 struct _MIDIEvent{
 	EventType type;
+	guint32 delta_time;
 	struct _MIDIEvent * next;
 	//pointer to struct of type determined by event type
 	//for ghetto polymorphism 
