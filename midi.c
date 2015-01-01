@@ -86,7 +86,7 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
 	char * name = "MTrk";
 
 	if (fread(&track->header, sizeof(MIDITrackHeader), 1, file) < 1)
-		return FILE_INVALID;
+		return FILE_IO_ERROR;
 
 	//swap endianness
 	track->header.size = GUINT32_FROM_BE(track->header.size);
