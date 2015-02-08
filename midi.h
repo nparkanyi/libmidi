@@ -11,7 +11,8 @@ enum errors{
   SUCCESS,
   FILE_IO_ERROR,
   FILE_INVALID,
-  VLV_ERROR
+  VLV_ERROR,
+  MEMORY_ERROR
 };
 
 //channel events
@@ -96,6 +97,7 @@ struct _MIDIEvent{
   EventType type;
   guint32 delta_time;
   struct _MIDIEvent * next;
+  struct _MIDIEvent * prev;
   //pointer to struct of type determined by event type
   //for ghetto polymorphism 
   char * data;
@@ -111,6 +113,7 @@ typedef struct {
   MIDITrackHeader header;
   //track's events stored as linked list
   MIDIEvent * head;
+  MIDIEvent * tail;
 } MIDITrack;
 
 typedef struct {
@@ -118,7 +121,7 @@ typedef struct {
   MIDIHeader header;
 } MIDIFile;
 
-//read in Variable Length Value used by some MIDI values
+//read Variable Length Value used by some MIDI values into val
 //never larger than 4 bytes
 int VLV_read(FILE * buf, guint32 * val);
 

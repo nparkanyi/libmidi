@@ -1,6 +1,6 @@
-o/*
-  * Copyright (c) 2014 Nicholas Parkanyi
-  * See LICENSE
+/*
+ * Copyright (c) 2014 Nicholas Parkanyi
+ * See LICENSE
 */
 #include <stdio.h>
 #include "midi.h"
@@ -76,6 +76,9 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
   char * name = "MTrk";
 
+  track->head = NULL;
+  track->tail = NULL;
+  
   if (fread(&track->header.id, sizeof(char), 4, file) < 1)
     return FILE_IO_ERROR;
   if (fread(&track->header.size, sizeof(guint32), 1, file) < 1)
