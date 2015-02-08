@@ -63,7 +63,15 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
   int i;
   char * name = "MThd";
 
-  if (fread(header, sizeof(MIDIHeader), 1, file) < 1)
+  if (fread(&header->id, sizeof(char), 4, file) < 1)
+    return FILE_INVALID;
+  if (fread(&header->size, sizeof(guint32), 1, file) < 1)
+    return FILE_INVALID;
+  if (fread(&header->format, sizeof(guint16), 1, file) < 1)
+    return FILE_INVALID;
+  if (fread(&header->num_tracks, sizeof(guint16), 1, file) < 1)
+    return FILE_INVALID;
+  if (fread(&header->time_div, sizeof(guint16), 1, file) < 1)
     return FILE_INVALID;
   
   //swap endianness (does nothing if host is BE)
@@ -85,7 +93,9 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
   char * name = "MTrk";
 
-  if (fread(&track->header, sizeof(MIDITrackHeader), 1, file) < 1)
+  if (fread(&track->header.id, sizeof(char), 4, file) < 1)
+    return FILE_IO_ERROR;
+  if (fread(&track->header.size, sizeof(guint32), 1, file) < 1)
     return FILE_IO_ERROR;
 
   //swap endianness
@@ -93,8 +103,8 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
   
   //if id is not "MTrk", not a track
   for (i = 0; i < 4; i++){
-    if (track->header.id[i] != name[i])
-      return FILE_INVALID;
+      if (track->header.id[i] != name[i])
+        return FILE_INVALID;
   }
 
   return SUCCESS;
