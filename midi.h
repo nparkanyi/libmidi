@@ -100,9 +100,15 @@ struct _MIDIEvent{
   struct _MIDIEvent * prev;
   //pointer to struct of type determined by event type
   //for ghetto polymorphism 
-  char * data;
+  void * data;
 }; 
 typedef struct _MIDIEvent MIDIEvent;
+
+typedef struct {
+  char channel;
+  char param1;
+  char param2;
+} MIDIChannelEventData;
 
 typedef struct {
   char id[4];
@@ -123,6 +129,7 @@ typedef struct {
 
 //read Variable Length Value used by some MIDI values into val
 //never larger than 4 bytes
+//return VLV_ERROR if fails
 int VLV_read(FILE * buf, guint32 * val);
 
 int MIDIFile_load(MIDIFile * midi, const char * filename);
@@ -130,5 +137,10 @@ int MIDIFile_load(MIDIFile * midi, const char * filename);
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
 
 int MIDITrack_load(MIDITrack * track, FILE * file);
+int MIDITrack_load_events(MIDITrack * track, FILE * file);
+int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
+                                 char type, char channel,
+                                 guint32 delta, FILE * file);
+void MIDITrack_delete_events(MIDITrack * track);
 
 #endif

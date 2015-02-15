@@ -3,6 +3,7 @@
  * See LICENSE
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include "midi.h"
 
 int VLV_read(FILE * buf, guint32 * val){
@@ -17,7 +18,6 @@ int VLV_read(FILE * buf, guint32 * val){
 
     *val = ((*val << 7) | (byte % 128));
 
-    //is last byte?
     if ((byte & 0x80) == 0x00){
       return SUCCESS;
     }
@@ -74,6 +74,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
+  int bytes_read = 0;
   char * name = "MTrk";
 
   track->head = NULL;
@@ -93,5 +94,119 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
         return FILE_INVALID;
   }
 
+  return MIDITrack_load_events(track, file);
+}
+
+int MIDITrack_load_events(MIDITrack * track, FILE * file){
+  int bytes_read = 0;
+  guint32 ev_delta_time;
+  //if a channel event, type and channel # packed into one byte
+  //otherwise, entire byte represents the type :{
+  char ev_type_channel;
+  char ev_type;
+  char ev_channel;
+  const int size = track->header.size;
+  guint32 skip_bytes;
+  int r;
+
+  while (bytes_read < size){
+    if (VLV_read(file, &ev_delta_time) == VLV_ERROR)
+      return FILE_IO_ERROR;
+    if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
+      return FILE_IO_ERROR;
+
+    //sys and meta events, ignoring these for now
+    if (ev_type_channel == 0xF0 ||
+        ev_type_channel == 0xFF){
+      if(VLV_read(file, &skip_bytes) == VLV_ERROR)
+        return FILE_IO_ERROR;
+      if(fseek(file, skip_bytes, SEEK_CUR) != 0)
+        return FILE_INVALID;
+      bytes_read += skip_bytes;
+    }
+
+    //channel events
+    ev_type = (ev_type_channel & 0xF0) >> 4;
+    ev_channel = ev_type_channel & 0x0F;
+    r = MIDITrack_load_channel_event(track, &bytes_read, 
+                                     ev_type, ev_channel,
+                                     ev_delta_time, file);
+    if (r != SUCCESS)
+      return r;
+  }
   return SUCCESS;
+}
+
+int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
+                                 char type, char channel,
+                                 guint32 delta, FILE * file){
+  MIDIEvent * temp = NULL;
+  MIDIChannelEventData * data = NULL;
+  int r;
+
+  temp = (MIDIEvent *)malloc(sizeof(MIDIEvent));
+  if (temp == NULL)
+    return MEMORY_ERROR;
+
+  data = (MIDIChannelEventData *)malloc(sizeof(MIDIChannelEventData));
+  if (data == NULL){
+    r = MEMORY_ERROR;
+    goto fail2;
+  }
+
+  data->channel = channel;
+  if (fread(&data->param1, sizeof(char), 1, file) < 1){
+    r = FILE_IO_ERROR;
+    goto fail1;
+  }
+  *bytes_read++;
+
+  switch (type){
+    case EV_NOTE_ON:
+    case EV_NOTE_OFF:
+    case EV_NOTE_AFTERTOUCH:
+    case EV_CONTROLLER:
+    case EV_PITCH_BEND:
+      if (fread(&data->param2, sizeof(char), 1, file) < 1){
+        r = FILE_IO_ERROR;
+        goto fail1;
+      }
+      *bytes_read++;
+      break;
+    case EV_PROGRAM_CHANGE:
+    case EV_CHANNEL_AFTERTOUCH:
+      data->param2 = 0;
+      break;
+  }
+
+  temp->data = (void *)data;
+  temp->next = NULL;
+  //add the event to the track's linked list
+  if (track->head == NULL){
+    track->head = temp;
+    track->tail = temp;
+  } else {
+    temp->prev = track->tail;
+    track->tail->next = temp;
+    track->tail = temp;
+  }
+  return SUCCESS;
+
+fail1:
+  free(data);
+fail2:
+  free(temp);
+  return r;
+}
+
+void MIDITrack_delete_events(MIDITrack * track){
+  MIDIEvent * temp = track->head;
+
+  while (track->head != NULL){
+    temp = track->head;
+    track->head = track->head->next;
+    free(temp->data);
+    free(temp);
+  }
+  track->tail = NULL;
 }
