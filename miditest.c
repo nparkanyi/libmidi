@@ -38,6 +38,7 @@ int main(int argc, char * argv[]){
 
   ptr = track.head;
   while (ptr != NULL){
+    printf("type: %X\n", ptr->type);
     if (ptr->type == EV_NOTE_ON){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
     }

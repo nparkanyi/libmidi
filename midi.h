@@ -130,7 +130,8 @@ typedef struct {
 //read Variable Length Value used by some MIDI values into val
 //never larger than 4 bytes
 //return VLV_ERROR if fails
-int VLV_read(FILE * buf, guint32 * val);
+//set bytes_read to NULL if you don't need it
+int VLV_read(FILE * buf, guint32 * val, int * bytes_read);
 
 int MIDIFile_load(MIDIFile * midi, const char * filename);
 

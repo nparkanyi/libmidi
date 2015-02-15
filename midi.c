@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "midi.h"
 
-int VLV_read(FILE * buf, guint32 * val){
+int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
   char byte;
   int i;
   
@@ -19,6 +19,8 @@ int VLV_read(FILE * buf, guint32 * val){
     *val = ((*val << 7) | (byte % 128));
 
     if ((byte & 0x80) == 0x00){
+      if (bytes_read != NULL)
+        *bytes_read = i + 1;
       return SUCCESS;
     }
   } 
@@ -94,11 +96,13 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
         return FILE_INVALID;
   }
 
+  MIDITrack_load_events(track, file);
   return MIDITrack_load_events(track, file);
 }
 
 int MIDITrack_load_events(MIDITrack * track, FILE * file){
   int bytes_read = 0;
+  int vlv_read;
   guint32 ev_delta_time;
   //if a channel event, type and channel # packed into one byte
   //otherwise, entire byte represents the type :{
@@ -110,16 +114,21 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   int r;
 
   while (bytes_read < size){
-    if (VLV_read(file, &ev_delta_time) == VLV_ERROR)
+    //printf("bytes_read: %d\n", bytes_read);
+    if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
+
+    bytes_read += vlv_read;
     if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
       return FILE_IO_ERROR;
 
     //sys and meta events, ignoring these for now
     if (ev_type_channel == 0xF0 ||
         ev_type_channel == 0xFF){
-      if(VLV_read(file, &skip_bytes) == VLV_ERROR)
+      if(VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
+      //printf("skip_bytes: %d\n", skip_bytes);
+      bytes_read += vlv_read;
       if(fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       bytes_read += skip_bytes;
@@ -128,6 +137,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     //channel events
     ev_type = (ev_type_channel & 0xF0) >> 4;
     ev_channel = ev_type_channel & 0x0F;
+    //printf("ev_type: %X\n", ev_type);
     r = MIDITrack_load_channel_event(track, &bytes_read, 
                                      ev_type, ev_channel,
                                      ev_delta_time, file);
@@ -148,6 +158,9 @@ int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
   if (temp == NULL)
     return MEMORY_ERROR;
 
+  temp->type = type;
+  temp->delta_time = delta;
+
   data = (MIDIChannelEventData *)malloc(sizeof(MIDIChannelEventData));
   if (data == NULL){
     r = MEMORY_ERROR;
@@ -159,6 +172,7 @@ int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
     r = FILE_IO_ERROR;
     goto fail1;
   }
+  //printf("read param1: %d\n", data->param1);
   *bytes_read++;
 
   switch (type){
@@ -171,6 +185,7 @@ int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
         r = FILE_IO_ERROR;
         goto fail1;
       }
+      //printf("read param2: %d\n", data->param2);
       *bytes_read++;
       break;
     case EV_PROGRAM_CHANGE:
