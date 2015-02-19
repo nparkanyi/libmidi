@@ -3,6 +3,7 @@
  * See LICENSE
 */
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include "midi.h"
 
@@ -76,7 +77,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
-  int bytes_read = 0;
+  //int bytes_read = 0;
   char * name = "MTrk";
 
   track->head = NULL;
@@ -92,11 +93,13 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
   
   //if id is not "MTrk", not a track
   for (i = 0; i < 4; i++){
-      if (track->header.id[i] != name[i])
+      if (track->header.id[i] != name[i]){
+        printf("MTrk not found\n");
         return FILE_INVALID;
+      }
   }
 
-  MIDITrack_load_events(track, file);
+  //MIDITrack_load_events(track, file);
   return MIDITrack_load_events(track, file);
 }
 
@@ -113,26 +116,28 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   guint32 skip_bytes;
   int r;
 
-  while (bytes_read < size){
+  do {
+    assert(bytes_read < size);
     //printf("bytes_read: %d\n", bytes_read);
     if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
-
     bytes_read += vlv_read;
+
     if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
       return FILE_IO_ERROR;
+    bytes_read++;
 
     //sys and meta events, ignoring these for now
     if (ev_type_channel == 0xF0 ||
         ev_type_channel == 0xFF){
       if(VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
-      //printf("skip_bytes: %d\n", skip_bytes);
+      printf("skip_bytes: %d\n", skip_bytes);
       bytes_read += vlv_read;
       if(fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       bytes_read += skip_bytes;
-    }
+    } 
 
     //channel events
     ev_type = (ev_type_channel & 0xF0) >> 4;
@@ -143,7 +148,10 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
                                      ev_delta_time, file);
     if (r != SUCCESS)
       return r;
-  }
+
+//    assert(bytes_read < size);
+  } while (bytes_read < size);
+  printf("bytes_read: %d\n", bytes_read);
   return SUCCESS;
 }
 
@@ -173,7 +181,7 @@ int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
     goto fail1;
   }
   //printf("read param1: %d\n", data->param1);
-  *bytes_read++;
+  (*bytes_read)++;
 
   switch (type){
     case EV_NOTE_ON:
@@ -186,7 +194,7 @@ int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
         goto fail1;
       }
       //printf("read param2: %d\n", data->param2);
-      *bytes_read++;
+      (*bytes_read)++;
       break;
     case EV_PROGRAM_CHANGE:
     case EV_CHANNEL_AFTERTOUCH:
