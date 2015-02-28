@@ -3,7 +3,6 @@
  * See LICENSE
 */
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "midi.h"
 
@@ -128,9 +127,9 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
       if (fread(&ev_type, sizeof(char), 1, file) < 1)
         return FILE_IO_ERROR;
 
-      if(VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
+      if (VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
-      if(fseek(file, skip_bytes, SEEK_CUR) != 0)
+      if (fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       continue;
     } 
