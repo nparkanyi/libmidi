@@ -17,7 +17,7 @@ int main(int argc, char * argv[]){
       puts("ERROR: Invalid MIDI file!");
       return 1;
   } 
-  fseek(midi.file, 217, SEEK_CUR);
+  //fseek(midi.file, 217, SEEK_CUR);
 
   r = MIDITrack_load(&track, midi.file);
   switch (r){

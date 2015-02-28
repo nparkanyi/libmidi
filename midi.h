@@ -139,7 +139,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file);
 
 int MIDITrack_load(MIDITrack * track, FILE * file);
 int MIDITrack_load_events(MIDITrack * track, FILE * file);
-int MIDITrack_load_channel_event(MIDITrack * track, int * bytes_read,
+int MIDITrack_load_channel_event(MIDITrack * track,
                                  char type, char channel,
                                  guint32 delta, FILE * file);
 void MIDITrack_delete_events(MIDITrack * track);
