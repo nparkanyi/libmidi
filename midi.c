@@ -91,10 +91,10 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
   
   //if id is not "MTrk", not a track
   for (i = 0; i < 4; i++){
-      if (track->header.id[i] != name[i]){
-        printf("MTrk not found\n");
-        return FILE_INVALID;
-      }
+    if (track->header.id[i] != name[i]){
+      printf("MTrk not found\n");
+      return FILE_INVALID;
+    }
   }
 
   //MIDITrack_load_events(track, file);
