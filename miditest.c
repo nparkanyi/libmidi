@@ -32,8 +32,8 @@ int main(int argc, char * argv[]){
       break;
   }
 
-  //r = MIDITrack_load(&track2, midi.file);
-  /*switch (r){
+  r = MIDITrack_load(&track2, midi.file);
+  switch (r){
     case FILE_INVALID:
       puts("track 2 ERROR reading track: Invalid data!");
       break;
@@ -43,7 +43,7 @@ int main(int argc, char * argv[]){
     case MEMORY_ERROR:
       puts("ERROR: failed to allocate memory!");
       break;
-  }*/
+  }
 
   printf("header size: %d\n", (int)midi.header.size);
   printf("format: %d\n", midi.header.format);
@@ -68,7 +68,7 @@ int main(int argc, char * argv[]){
   /*for (i = 0; i < 500; i++){
     printf("%d: %c\n", i, fgetc(midi.file));
   }*/
-  /*puts("******track 2*********");
+  puts("******track 2*********");
   ptr = track2.head;
   while (ptr != NULL){
     printf("type: 0x%X\n", ptr->type);
@@ -76,7 +76,7 @@ int main(int argc, char * argv[]){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
     }
     ptr = ptr->next;
-  }*/
+  }
 
   fclose(midi.file);
   return 0;

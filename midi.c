@@ -7,7 +7,7 @@
 #include "midi.h"
 
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
-  char byte;
+  guint8 byte;
   int i;
   
   *val = 0x00;
@@ -29,7 +29,7 @@ int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
 }
 
   
-int MIDIFile_load(MIDIFile * midi, const char * filename){
+int MIDIFile_load(MIDIFile * midi, const guint8 * filename){
   int r;
 
   midi->file = fopen(filename, "r");
@@ -46,9 +46,9 @@ int MIDIFile_load(MIDIFile * midi, const char * filename){
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file){
   int i;
-  char * name = "MThd";
+  guint8 * name = "MThd";
 
-  if (fread(&header->id, sizeof(char), 4, file) < 1)
+  if (fread(&header->id, sizeof(guint8), 4, file) < 1)
     return FILE_INVALID;
   if (fread(&header->size, sizeof(guint32), 1, file) < 1)
     return FILE_INVALID;
@@ -76,12 +76,12 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
-  char * name = "MTrk";
+  guint8 * name = "MTrk";
 
   track->head = NULL;
   track->tail = NULL;
   
-  if (fread(&track->header.id, sizeof(char), 4, file) < 1)
+  if (fread(&track->header.id, sizeof(guint8), 4, file) < 1)
     return FILE_IO_ERROR;
   if (fread(&track->header.size, sizeof(guint32), 1, file) < 1)
     return FILE_IO_ERROR;
@@ -107,9 +107,9 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   guint32 ev_delta_time;
   //if a channel event, type and channel # packed into one byte
   //otherwise, entire byte represents the type :{
-  char ev_type_channel;
-  char ev_type;
-  char ev_channel;
+  guint8 ev_type_channel;
+  guint8 ev_type;
+  guint8 ev_channel;
   const int size = track->header.size;
   guint32 skip_bytes;
   int r;
@@ -118,13 +118,13 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
 
-    if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
+    if (fread(&ev_type_channel, sizeof(guint8), 1, file) < 1)
       return FILE_IO_ERROR;
 
     //sys and meta events, ignoring these for now
     if (ev_type_channel == 0xF0 ||
         ev_type_channel == 0xFF){
-      if (fread(&ev_type, sizeof(char), 1, file) < 1)
+      if (fread(&ev_type, sizeof(guint8), 1, file) < 1)
         return FILE_IO_ERROR;
 
       if (VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
@@ -146,7 +146,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
 }
 
 int MIDITrack_load_channel_event(MIDITrack * track, 
-                                 char type, char channel,
+                                 guint8 type, guint8 channel,
                                  guint32 delta, FILE * file){
   MIDIEvent * temp = NULL;
   MIDIChannelEventData * data = NULL;
@@ -166,7 +166,7 @@ int MIDITrack_load_channel_event(MIDITrack * track,
   }
 
   data->channel = channel;
-  if (fread(&data->param1, sizeof(char), 1, file) < 1){
+  if (fread(&data->param1, sizeof(guint8), 1, file) < 1){
     r = FILE_IO_ERROR;
     goto fail1;
   }
@@ -177,7 +177,7 @@ int MIDITrack_load_channel_event(MIDITrack * track,
     case EV_NOTE_AFTERTOUCH:
     case EV_CONTROLLER:
     case EV_PITCH_BEND:
-      if (fread(&data->param2, sizeof(char), 1, file) < 1){
+      if (fread(&data->param2, sizeof(guint8), 1, file) < 1){
         r = FILE_IO_ERROR;
         goto fail1;
       }

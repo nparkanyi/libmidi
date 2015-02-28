@@ -86,7 +86,7 @@ typedef enum {
 } ControllerType;
 
 typedef struct {
-  char id[4];
+  guint8 id[4];
   guint32 size;
   guint16 format;
   guint16 num_tracks;
@@ -105,13 +105,13 @@ struct _MIDIEvent{
 typedef struct _MIDIEvent MIDIEvent;
 
 typedef struct {
-  char channel;
-  char param1;
-  char param2;
+  guint8 channel;
+  guint8 param1;
+  guint8 param2;
 } MIDIChannelEventData;
 
 typedef struct {
-  char id[4];
+  guint8 id[4];
   guint32 size;
 } MIDITrackHeader;
 
@@ -133,14 +133,14 @@ typedef struct {
 //set bytes_read to NULL if you don't need it
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read);
 
-int MIDIFile_load(MIDIFile * midi, const char * filename);
+int MIDIFile_load(MIDIFile * midi, const guint8 * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
 
 int MIDITrack_load(MIDITrack * track, FILE * file);
 int MIDITrack_load_events(MIDITrack * track, FILE * file);
 int MIDITrack_load_channel_event(MIDITrack * track,
-                                 char type, char channel,
+                                 guint8 type, guint8 channel,
                                  guint32 delta, FILE * file);
 void MIDITrack_delete_events(MIDITrack * track);
 
