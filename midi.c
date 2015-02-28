@@ -77,7 +77,6 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
-  //int bytes_read = 0;
   char * name = "MTrk";
 
   track->head = NULL;
@@ -117,10 +116,8 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   int r;
 
   do {
-    //printf("bytes_read: %d\n", bytes_read);
     if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
-    printf("VLV delta time: %d\n", ev_delta_time);
 
     if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
       return FILE_IO_ERROR;
@@ -131,11 +128,8 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
       if (fread(&ev_type, sizeof(char), 1, file) < 1)
         return FILE_IO_ERROR;
 
-      printf("meta event type: %x\n", ev_type);
-
       if(VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
-      printf("skip_bytes: %d\n", skip_bytes);
       if(fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       continue;
@@ -144,13 +138,10 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     //channel events
     ev_type = (ev_type_channel & 0xF0) >> 4;
     ev_channel = ev_type_channel & 0x0F;
-    //printf("ev_type: %X\n", ev_type);
     r = MIDITrack_load_channel_event(track, ev_type, ev_channel,
                                             ev_delta_time, file);
     if (r != SUCCESS)
       return r;
-
-//    assert(bytes_read < size);
   } while (ev_type != META_END_TRACK);
   return SUCCESS;
 }
