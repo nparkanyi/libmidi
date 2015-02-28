@@ -122,6 +122,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
     bytes_read += vlv_read;
+    printf("VLV delta time: %d\n", ev_delta_time);
 
     if (fread(&ev_type_channel, sizeof(char), 1, file) < 1)
       return FILE_IO_ERROR;
@@ -130,6 +131,10 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     //sys and meta events, ignoring these for now
     if (ev_type_channel == 0xF0 ||
         ev_type_channel == 0xFF){
+      if (fread(&ev_type, sizeof(char), 1, file) < 1)
+        return FILE_IO_ERROR;
+      printf("meta event type: %x\n", ev_type);
+
       if(VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
       printf("skip_bytes: %d\n", skip_bytes);
