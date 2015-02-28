@@ -142,6 +142,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
       if(fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       bytes_read += skip_bytes;
+      continue;
     } 
 
     //channel events
