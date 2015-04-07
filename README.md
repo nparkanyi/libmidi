@@ -1,5 +1,5 @@
 libmidi
 =======
-libmidi is a C library for reading MIDI files. It is a work in progress. 
+libmidi is a C library for reading MIDI files. It is a work in progress.
 
-libmidi depends on glib. 
+libmidi depends on glib.
