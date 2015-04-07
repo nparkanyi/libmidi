@@ -9,7 +9,7 @@
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
   guint8 byte;
   int i;
-  
+
   *val = 0x00;
 
   for (i = 0; i < 4; i++){
@@ -23,23 +23,23 @@ int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
         *bytes_read = i + 1;
       return SUCCESS;
     }
-  } 
+  }
   //VLVs smaller than 4 bytes, should never reach here
   return VLV_ERROR;
 }
 
-  
+
 int MIDIFile_load(MIDIFile * midi, const guint8 * filename){
   int r;
 
   midi->file = fopen(filename, "r");
-  if (!midi->file) 
+  if (!midi->file)
     return FILE_IO_ERROR;
-  
+
   r = MIDIHeader_load(&midi->header, midi->file);
   if (r != SUCCESS)
     fclose(midi->file);
-  
+
   return r;
 }
 
@@ -58,7 +58,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
     return FILE_INVALID;
   if (fread(&header->time_div, sizeof(guint16), 1, file) < 1)
     return FILE_INVALID;
-  
+
   //swap endianness (does nothing if host is BE)
   header->size = GUINT32_FROM_BE(header->size);
   header->format = GUINT16_FROM_BE(header->format);
@@ -67,7 +67,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
 
   //if id is not "MThd", not a MIDI file
   for (i = 0; i < 4; i++){
-    if (header->id[i] != name[i]) 
+    if (header->id[i] != name[i])
       return FILE_INVALID;
   }
 
@@ -80,7 +80,7 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
 
   track->head = NULL;
   track->tail = NULL;
-  
+
   if (fread(&track->header.id, sizeof(guint8), 4, file) < 1)
     return FILE_IO_ERROR;
   if (fread(&track->header.size, sizeof(guint32), 1, file) < 1)
@@ -88,7 +88,7 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
 
   //swap endianness
   track->header.size = GUINT32_FROM_BE(track->header.size);
-  
+
   //if id is not "MTrk", not a track
   for (i = 0; i < 4; i++){
     if (track->header.id[i] != name[i]){
@@ -132,7 +132,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
       if (fseek(file, skip_bytes, SEEK_CUR) != 0)
         return FILE_INVALID;
       continue;
-    } 
+    }
 
     //channel events
     ev_type = (ev_type_channel & 0xF0) >> 4;
@@ -145,7 +145,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   return SUCCESS;
 }
 
-int MIDITrack_load_channel_event(MIDITrack * track, 
+int MIDITrack_load_channel_event(MIDITrack * track,
                                  guint8 type, guint8 channel,
                                  guint32 delta, FILE * file){
   MIDIEvent * temp = NULL;

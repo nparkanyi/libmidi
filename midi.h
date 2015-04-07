@@ -99,9 +99,9 @@ struct _MIDIEvent{
   struct _MIDIEvent * next;
   struct _MIDIEvent * prev;
   //pointer to struct of type determined by event type
-  //for ghetto polymorphism 
+  //for ghetto polymorphism
   void * data;
-}; 
+};
 typedef struct _MIDIEvent MIDIEvent;
 
 typedef struct {
