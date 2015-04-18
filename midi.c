@@ -152,14 +152,14 @@ int MIDITrack_load_channel_event(MIDITrack * track,
   MIDIChannelEventData * data = NULL;
   int r;
 
-  temp = (MIDIEvent *)malloc(sizeof(MIDIEvent));
+  temp = malloc(sizeof(MIDIEvent));
   if (temp == NULL)
     return MEMORY_ERROR;
 
   temp->type = type;
   temp->delta_time = delta;
 
-  data = (MIDIChannelEventData *)malloc(sizeof(MIDIChannelEventData));
+  data = malloc(sizeof(MIDIChannelEventData));
   if (data == NULL){
     r = MEMORY_ERROR;
     goto fail2;
