@@ -70,11 +70,12 @@ int main(int argc, char * argv[]){
     printf("type: 0x%X\n", ptr->type);
     if (ptr->type == EV_NOTE_ON){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
-      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1, 100);
+      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
+                                   ((MIDIChannelEventData*)(ptr->data))->param2);
       system("sleep 1");
     }
     if (ptr->type == EV_NOTE_OFF){
-      printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      printf("noteoff: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
       fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
     }
     ptr = ptr->next;

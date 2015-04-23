@@ -110,6 +110,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
   guint8 ev_type_channel;
   guint8 ev_type;
   guint8 ev_channel;
+  guint8 param1, param2;
   const int size = track->header.size;
   guint32 skip_bytes;
   int r;
@@ -135,19 +136,33 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     }
 
     //channel events
-    ev_type = (ev_type_channel & 0xF0) >> 4;
-    ev_channel = ev_type_channel & 0x0F;
-    r = MIDITrack_load_channel_event(track, ev_type, ev_channel,
-                                            ev_delta_time, file);
+    /* if first bit not zero, this is new status byte
+     * otherwise, apply running status, this is 1st parameter byte */
+    if ((ev_type_channel & 0x80) != 0){
+      ev_type = (ev_type_channel & 0xF0) >> 4;
+      ev_channel = ev_type_channel & 0x0F;
+      if (fread(&param1, sizeof(guint8), 1, file) < 1)
+        return FILE_IO_ERROR;
+    } else {
+      param1 = ev_type_channel;
+    }
+
+    if (fread(&param2, sizeof(guint8), 1, file) < 1)
+      return FILE_IO_ERROR;
+
+    r = MIDITrack_add_channel_event(track, ev_type, ev_channel,
+                                            ev_delta_time, param1,
+                                            param2);
     if (r != SUCCESS)
       return r;
   } while (ev_type != META_END_TRACK);
   return SUCCESS;
 }
 
-int MIDITrack_load_channel_event(MIDITrack * track,
+int MIDITrack_add_channel_event(MIDITrack * track,
                                  guint8 type, guint8 channel,
-                                 guint32 delta, FILE * file){
+                                 guint32 delta, guint8 param1,
+                                 guint8 param2){
   MIDIEvent * temp = NULL;
   MIDIChannelEventData * data = NULL;
   int r;
@@ -162,31 +177,12 @@ int MIDITrack_load_channel_event(MIDITrack * track,
   data = malloc(sizeof(MIDIChannelEventData));
   if (data == NULL){
     r = MEMORY_ERROR;
-    goto fail2;
+    goto fail;
   }
 
   data->channel = channel;
-  if (fread(&data->param1, sizeof(guint8), 1, file) < 1){
-    r = FILE_IO_ERROR;
-    goto fail1;
-  }
-
-  switch (type){
-    case EV_NOTE_ON:
-    case EV_NOTE_OFF:
-    case EV_NOTE_AFTERTOUCH:
-    case EV_CONTROLLER:
-    case EV_PITCH_BEND:
-      if (fread(&data->param2, sizeof(guint8), 1, file) < 1){
-        r = FILE_IO_ERROR;
-        goto fail1;
-      }
-      break;
-    case EV_PROGRAM_CHANGE:
-    case EV_CHANNEL_AFTERTOUCH:
-      data->param2 = 0;
-      break;
-  }
+  data->param1 = param1;
+  data->param2 = param2;
 
   temp->data = (void *)data;
   temp->next = NULL;
@@ -201,9 +197,7 @@ int MIDITrack_load_channel_event(MIDITrack * track,
   }
   return SUCCESS;
 
-fail1:
-  free(data);
-fail2:
+fail:
   free(temp);
   return r;
 }
