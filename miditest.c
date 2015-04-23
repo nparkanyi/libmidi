@@ -1,12 +1,16 @@
 #include <stdio.h>
+#include <fluidsynth.h>
 #include "midi.h"
 
 int main(int argc, char * argv[]){
-  int r, i;
+  int r, i, sfHandle;
   MIDIFile midi;
   MIDITrack track;
   MIDITrack track2;
   MIDIEvent * ptr;
+  fluid_settings_t * settings;
+  fluid_synth_t* synth;
+  fluid_audio_driver_t * adriver;
 
   r = MIDIFile_load(&midi, argv[1]);
   switch (r){
@@ -53,14 +57,25 @@ int main(int argc, char * argv[]){
   printf("*******************\n");
 //  printf("track2 size: %d\n", track2.header.size);
 
+  //set up fluidsynth
+  settings = new_fluid_settings();
+  synth = new_fluid_synth(settings);
+  fluid_settings_setstr(settings, "audio.driver", "alsa");
+  adriver = new_fluid_audio_driver(settings, synth);
+  sfHandle = fluid_synth_sfload(synth, "font.sf2", 1);
+  fluid_synth_bank_select(synth, 0, 0);
+
   ptr = track.head;
   while (ptr != NULL){
     printf("type: 0x%X\n", ptr->type);
     if (ptr->type == EV_NOTE_ON){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1, 100);
+      system("sleep 1");
     }
     if (ptr->type == EV_NOTE_OFF){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
     }
     ptr = ptr->next;
   }
@@ -71,13 +86,23 @@ int main(int argc, char * argv[]){
   puts("******track 2*********");
   ptr = track2.head;
   while (ptr != NULL){
-    printf("type: 0x%X\n", ptr->type);
+    //printf("type: 0x%X\n", ptr->type);
     if (ptr->type == EV_NOTE_ON){
       printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1, 100);
+      system("sleep 1");
+    }
+    if (ptr->type == EV_NOTE_OFF){
+      fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
+      printf("noteoff: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
     }
     ptr = ptr->next;
   }
 
+  fluid_synth_sfunload(synth, sfHandle, 0);
+  delete_fluid_audio_driver(adriver);
+  delete_fluid_synth(synth);
+  delete_fluid_settings(settings);
   fclose(midi.file);
   return 0;
 }
