@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <fluidsynth.h>
+#include <SDL2/SDL.h>
 #include "midi.h"
 
 int main(int argc, char * argv[]){
@@ -7,10 +8,13 @@ int main(int argc, char * argv[]){
   MIDIFile midi;
   MIDITrack track;
   MIDITrack track2;
+  MIDITrack track3;
   MIDIEvent * ptr;
   fluid_settings_t * settings;
   fluid_synth_t* synth;
   fluid_audio_driver_t * adriver;
+  guint32 ticks = 0;
+  long conversion;
 
   r = MIDIFile_load(&midi, argv[1]);
   switch (r){
@@ -55,30 +59,33 @@ int main(int argc, char * argv[]){
   printf("time div: %d\n", midi.header.time_div);
   printf("track size: %d\n", track.header.size);
   printf("*******************\n");
+  conversion = 60000 / (120 * midi.header.time_div);
 //  printf("track2 size: %d\n", track2.header.size);
 
   //set up fluidsynth
   settings = new_fluid_settings();
   synth = new_fluid_synth(settings);
-  fluid_settings_setstr(settings, "audio.driver", "alsa");
+  fluid_settings_setstr(settings, "audio.driver", "pulseaudio");
   adriver = new_fluid_audio_driver(settings, synth);
   sfHandle = fluid_synth_sfload(synth, "font.sf2", 1);
   fluid_synth_bank_select(synth, 0, 0);
 
+  SDL_Init(SDL_INIT_TIMER);
+
   ptr = track.head;
   while (ptr != NULL){
-    printf("type: 0x%X\n", ptr->type);
-    if (ptr->type == EV_NOTE_ON){
-      printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+    if (ptr->type == EV_NOTE_ON && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
                                    ((MIDIChannelEventData*)(ptr->data))->param2);
-      system("sleep 1");
-    }
-    if (ptr->type == EV_NOTE_OFF){
-      printf("noteoff: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      ptr = ptr->next;
+      ticks = SDL_GetTicks();
+    } else if (ptr->type == EV_NOTE_OFF && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
+      ptr = ptr->next;
+      ticks = SDL_GetTicks();
+    } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON){
+      ptr = ptr->next;
     }
-    ptr = ptr->next;
   }
 
   /*for (i = 0; i < 500; i++){
@@ -88,17 +95,21 @@ int main(int argc, char * argv[]){
   ptr = track2.head;
   while (ptr != NULL){
     //printf("type: 0x%X\n", ptr->type);
-    if (ptr->type == EV_NOTE_ON){
-      printf("note: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
-      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1, 100);
-      system("sleep 1");
-    }
-    if (ptr->type == EV_NOTE_OFF){
+    if (ptr->type == EV_NOTE_ON && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
+      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
+                                   ((MIDIChannelEventData*)(ptr->data))->param2);
+      ptr = ptr->next;
+      ticks = SDL_GetTicks();
+    } else if (ptr->type == EV_NOTE_OFF && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
-      printf("noteoff: %d\n", ((MIDIChannelEventData*)(ptr->data))->param1);
+      ptr = ptr->next;
+      ticks = SDL_GetTicks();
+    } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON){
+      ptr = ptr->next;
     }
-    ptr = ptr->next;
   }
+
+  SDL_Quit();
 
   fluid_synth_sfunload(synth, sfHandle, 0);
   delete_fluid_audio_driver(adriver);
