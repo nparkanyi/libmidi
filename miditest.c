@@ -85,6 +85,7 @@ int main(int argc, char * argv[]){
       ticks = SDL_GetTicks();
     } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON){
       ptr = ptr->next;
+      ticks = SDL_GetTicks();
     }
   }
 
@@ -106,6 +107,7 @@ int main(int argc, char * argv[]){
       ticks = SDL_GetTicks();
     } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON){
       ptr = ptr->next;
+      ticks = SDL_GetTicks();
     }
   }
 
