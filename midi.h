@@ -5,6 +5,7 @@
 #ifndef MIDI_H
 #define MIDI_H
 
+#include <stdbool.h>
 #include <glib.h>
 
 enum errors{
@@ -93,16 +94,30 @@ typedef struct {
   guint16 time_div;
 } MIDIHeader;
 
-struct _MIDIEvent{
+typedef struct {
   EventType type;
   guint32 delta_time;
-  struct _MIDIEvent * next;
-  struct _MIDIEvent * prev;
   /* pointer to struct of type determined by event type
    * for ghetto polymorphism */
   void * data;
+} MIDIEvent;
+
+struct _MIDIEventNode {
+  MIDIEvent ev;
+  struct _MIDIEventNode * next;
+  struct _MIDIEventNode * prev;
 };
-typedef struct _MIDIEvent MIDIEvent;
+typedef struct _MIDIEventNode MIDIEventNode;
+
+typedef struct {
+  MIDIEventNode * head;
+  MIDIEventNode * tail;
+} MIDIEventList;
+
+typedef struct {
+  MIDIEventNode * node;
+  MIDIEventList * list;
+} MIDIEventIterator;
 
 typedef struct {
   guint8 channel;
@@ -117,9 +132,7 @@ typedef struct {
 
 typedef struct {
   MIDITrackHeader header;
-  //track's events stored as linked list
-  MIDIEvent * head;
-  MIDIEvent * tail;
+  MIDIEventList * list;
 } MIDITrack;
 
 typedef struct {
@@ -137,12 +150,25 @@ int MIDIFile_load(MIDIFile * midi, const guint8 * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
 
+MIDIEventList * MIDIEventList_create();
+MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list);
+MIDIEventIterator MIDIEventList_get_end_iter(MIDIEventList * list);
+MIDIEventIterator MIDIEventList_next_event(MIDIEventIterator iter);
+MIDIEvent * MIDIEventList_get_event(MIDIEventIterator iter);
+bool MIDIEventList_is_end_iter(MIDIEventIterator iter);
+/* inserts new event after the given iterator
+ * set iter.node to NULL to insert at the very front */
+int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
+                         MIDIEvent ev);
+int MIDIEventList_append(MIDIEventList * list, MIDIEvent ev);
+void MIDIEventList_delete(MIDIEventList * list);
+
 int MIDITrack_load(MIDITrack * track, FILE * file);
 int MIDITrack_load_events(MIDITrack * track, FILE * file);
 int MIDITrack_add_channel_event(MIDITrack * track,
-                                 guint8 type, guint8 channel,
-                                 guint32 delta, guint8 param1,
-                                 guint8 param2);
+                                guint8 type, guint8 channel,
+                                guint32 delta, guint8 param1,
+                                guint8 param2);
 void MIDITrack_delete_events(MIDITrack * track);
 
 #endif

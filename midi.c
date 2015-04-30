@@ -74,12 +74,88 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file){
   return SUCCESS;
 }
 
+MIDIEventList * MIDIEventList_create(){
+  MIDIEventList * ret = malloc(sizeof(MIDIEventList));
+
+  ret->tail = NULL;
+  ret->head = NULL;
+
+  return ret;
+}
+
+MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list){
+  MIDIEventIterator iter = { list->head, list };
+
+  return iter;
+}
+
+MIDIEventIterator MIDIEventList_get_end_iter(MIDIEventList * list){
+  MIDIEventIterator iter = { list->tail, list };
+
+  return iter;
+}
+
+MIDIEventIterator MIDIEventList_next_event(MIDIEventIterator iter){
+  MIDIEventIterator new;
+
+  if (iter.node->next){
+    new.node = iter.node->next;
+    return new;
+  } else {
+    return iter;
+  }
+}
+
+MIDIEvent * MIDIEventList_get_event(MIDIEventIterator iter){
+  return &(iter.node->ev);
+}
+
+bool MIDIEventList_is_end_iter(MIDIEventIterator iter){
+  //return (iter.node == iter.list->tail);
+  return !(iter.node->next);
+}
+
+int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
+                         MIDIEvent ev){
+  MIDIEventNode * new = malloc(sizeof(MIDIEventNode));
+
+  if (!new)
+    return MEMORY_ERROR;
+
+  new->ev = ev;
+  if (iter.node){
+    new->prev = iter.node;
+    new->next = iter.node->next;
+    iter.node->next = new;
+    if (new->prev == iter.list->tail)
+      iter.list->tail = new;
+  } else {
+    new->next = list->head;
+    list->head = new;
+    if (!list->tail)
+      list->tail = new;
+  }
+  return SUCCESS;
+}
+
+int MIDIEventList_append(MIDIEventList * list, MIDIEvent ev){
+  return MIDIEventList_insert(list, MIDIEventList_get_end_iter(list), ev);
+}
+
+void MIDIEventList_delete(MIDIEventList * list){
+  MIDIEventNode * tmp;
+
+  while (list->head){
+    tmp = list->head->next;
+    free(list->head);
+    list->head = tmp;
+  }
+  free(list);
+}
+
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
   guint8 * name = "MTrk";
-
-  track->head = NULL;
-  track->tail = NULL;
 
   if (fread(&track->header.id, sizeof(guint8), 4, file) < 1)
     return FILE_IO_ERROR;
@@ -96,6 +172,10 @@ int MIDITrack_load(MIDITrack * track, FILE * file){
       return FILE_INVALID;
     }
   }
+
+  track->list = MIDIEventList_create();
+  if (!track->list)
+    return MEMORY_ERROR;
 
   //MIDITrack_load_events(track, file);
   return MIDITrack_load_events(track, file);
@@ -163,53 +243,25 @@ int MIDITrack_add_channel_event(MIDITrack * track,
                                  guint8 type, guint8 channel,
                                  guint32 delta, guint8 param1,
                                  guint8 param2){
-  MIDIEvent * temp = NULL;
-  MIDIChannelEventData * data = NULL;
+  MIDIEvent temp;
   int r;
 
-  temp = malloc(sizeof(MIDIEvent));
-  if (temp == NULL)
+  temp.type = type;
+  temp.delta_time = delta;
+
+  temp.data = malloc(sizeof(MIDIChannelEventData));
+  if (!temp.data){
     return MEMORY_ERROR;
-
-  temp->type = type;
-  temp->delta_time = delta;
-
-  data = malloc(sizeof(MIDIChannelEventData));
-  if (data == NULL){
-    r = MEMORY_ERROR;
-    goto fail;
   }
 
-  data->channel = channel;
-  data->param1 = param1;
-  data->param2 = param2;
+  ((MIDIChannelEventData*)(temp.data))->channel = channel;
+  ((MIDIChannelEventData*)(temp.data))->param1 = param1;
+  ((MIDIChannelEventData*)(temp.data))->param2 = param2;
 
-  temp->data = data;
-  temp->next = NULL;
-  //add the event to the track's linked list
-  if (track->head == NULL){
-    track->head = temp;
-    track->tail = temp;
-  } else {
-    temp->prev = track->tail;
-    track->tail->next = temp;
-    track->tail = temp;
-  }
-  return SUCCESS;
-
-fail:
-  free(temp);
-  return r;
+  return MIDIEventList_append(track->list, temp);
 }
 
 void MIDITrack_delete_events(MIDITrack * track){
-  MIDIEvent * temp = track->head;
-
-  while (track->head != NULL){
-    temp = track->head;
-    track->head = track->head->next;
-    free(temp->data);
-    free(temp);
-  }
-  track->tail = NULL;
+  MIDIEventList_delete(track->list);
 }
+

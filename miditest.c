@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fluidsynth.h>
 #include <SDL2/SDL.h>
+#include <assert.h>
 #include "midi.h"
 
 int main(int argc, char * argv[]){
@@ -72,8 +73,7 @@ int main(int argc, char * argv[]){
 
   SDL_Init(SDL_INIT_TIMER);
 
-  ptr = track.head;
-  while (ptr != NULL){
+/*  while (ptr != NULL){
     if (ptr->type == EV_NOTE_ON && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
                                    ((MIDIChannelEventData*)(ptr->data))->param2);
@@ -87,26 +87,29 @@ int main(int argc, char * argv[]){
       ptr = ptr->next;
       ticks = SDL_GetTicks();
     }
-  }
+  } */
 
   /*for (i = 0; i < 500; i++){
     printf("%d: %c\n", i, fgetc(midi.file));
   }*/
   puts("******track 2*********");
-  ptr = track2.head;
-  while (ptr != NULL){
+  assert(!track2.list->tail->next);
+  MIDIEventIterator iter = MIDIEventList_get_start_iter(track2.list);
+  while (!MIDIEventList_is_end_iter(iter)){
+    ptr = MIDIEventList_get_event(iter);
     //printf("type: 0x%X\n", ptr->type);
     if (ptr->type == EV_NOTE_ON && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
                                    ((MIDIChannelEventData*)(ptr->data))->param2);
-      ptr = ptr->next;
+      iter = MIDIEventList_next_event(iter);
       ticks = SDL_GetTicks();
     } else if (ptr->type == EV_NOTE_OFF && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
       fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
-      ptr = ptr->next;
+      iter = MIDIEventList_next_event(iter);
       ticks = SDL_GetTicks();
-    } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON){
-      ptr = ptr->next;
+    } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON /*&&
+               ptr->delta_time * conversion <= SDL_GetTicks() - ticks*/){
+      iter = MIDIEventList_next_event(iter);
       ticks = SDL_GetTicks();
     }
   }
@@ -117,6 +120,8 @@ int main(int argc, char * argv[]){
   delete_fluid_audio_driver(adriver);
   delete_fluid_synth(synth);
   delete_fluid_settings(settings);
+  MIDITrack_delete_events(&track);
+  MIDITrack_delete_events(&track2);
   fclose(midi.file);
   return 0;
 }
