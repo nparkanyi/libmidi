@@ -184,7 +184,7 @@ int MIDITrack_add_channel_event(MIDITrack * track,
   data->param1 = param1;
   data->param2 = param2;
 
-  temp->data = (void *)data;
+  temp->data = data;
   temp->next = NULL;
   //add the event to the track's linked list
   if (track->head == NULL){
