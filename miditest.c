@@ -7,14 +7,13 @@
 int main(int argc, char * argv[]){
   int r, i, sfHandle;
   MIDIFile midi;
-  MIDITrack track;
-  MIDITrack track2;
-  MIDITrack track3;
-  MIDIEvent * ptr;
+  MIDITrack * tracks;
+  MIDIEvent ** ptrs;
+  MIDIEventIterator * iters;
   fluid_settings_t * settings;
   fluid_synth_t* synth;
   fluid_audio_driver_t * adriver;
-  guint32 ticks = 0;
+  guint32 ticks[10] = {0, 0, 0, 0, 0};
   long conversion;
 
   r = MIDIFile_load(&midi, argv[1]);
@@ -28,37 +27,29 @@ int main(int argc, char * argv[]){
   }
   //fseek(midi.file, 217, SEEK_CUR);
 
-  r = MIDITrack_load(&track, midi.file);
-  switch (r){
-    case FILE_INVALID:
-      puts("track 1 ERROR reading track: Invalid data!");
-      break;
-    case FILE_IO_ERROR:
-      puts("ERROR: file io problem!");
-      break;
-    case MEMORY_ERROR:
-      puts("ERROR: failed to allocate memory!");
-      break;
-  }
-
-  r = MIDITrack_load(&track2, midi.file);
-  switch (r){
-    case FILE_INVALID:
-      puts("track 2 ERROR reading track: Invalid data!");
-      break;
-    case FILE_IO_ERROR:
-      puts("ERROR: file io problem!");
-      break;
-    case MEMORY_ERROR:
-      puts("ERROR: failed to allocate memory!");
-      break;
+  tracks = malloc(sizeof(MIDITrack) * midi.header.num_tracks);
+  ptrs = malloc(sizeof(MIDIEvent*) * midi.header.num_tracks);
+  iters = malloc(sizeof(MIDIEventIterator) * midi.header.num_tracks);
+  for (int i = 0; i < midi.header.num_tracks; i++){
+    r = MIDITrack_load(&tracks[i], midi.file);
+    switch (r){
+      case FILE_INVALID:
+        puts("track 1 ERROR reading track: Invalid data!");
+        break;
+      case FILE_IO_ERROR:
+        puts("ERROR: file io problem!");
+        break;
+      case MEMORY_ERROR:
+        puts("ERROR: failed to allocate memory!");
+        break;
+    }
   }
 
   printf("header size: %d\n", (int)midi.header.size);
   printf("format: %d\n", midi.header.format);
   printf("tracks: %d\n", midi.header.num_tracks);
   printf("time div: %d\n", midi.header.time_div);
-  printf("track size: %d\n", track.header.size);
+  //printf("track size: %d\n", track.header.size);
   printf("*******************\n");
   conversion = 60000 / (120 * midi.header.time_div);
 //  printf("track2 size: %d\n", track2.header.size);
@@ -92,25 +83,28 @@ int main(int argc, char * argv[]){
   /*for (i = 0; i < 500; i++){
     printf("%d: %c\n", i, fgetc(midi.file));
   }*/
-  puts("******track 2*********");
-  assert(!track2.list->tail->next);
-  MIDIEventIterator iter = MIDIEventList_get_start_iter(track2.list);
-  while (!MIDIEventList_is_end_iter(iter)){
-    ptr = MIDIEventList_get_event(iter);
-    //printf("type: 0x%X\n", ptr->type);
-    if (ptr->type == EV_NOTE_ON && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
-      fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1,
-                                   ((MIDIChannelEventData*)(ptr->data))->param2);
-      iter = MIDIEventList_next_event(iter);
-      ticks = SDL_GetTicks();
-    } else if (ptr->type == EV_NOTE_OFF && ptr->delta_time * conversion <= SDL_GetTicks() - ticks){
-      fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptr->data))->param1);
-      iter = MIDIEventList_next_event(iter);
-      ticks = SDL_GetTicks();
-    } else if (ptr->type != EV_NOTE_OFF && ptr->type != EV_NOTE_ON /*&&
-               ptr->delta_time * conversion <= SDL_GetTicks() - ticks*/){
-      iter = MIDIEventList_next_event(iter);
-      ticks = SDL_GetTicks();
+  for (int i = 0; i < midi.header.num_tracks; i++){
+    iters[i] = MIDIEventList_get_start_iter(tracks[i].list);
+  }
+  while (!MIDIEventList_is_end_iter(iters[2])){
+    //for (int i = 0; i < midi.header.num_tracks; i++){
+    for (int i = 2; i < 3; i++){
+      ptrs[i] = MIDIEventList_get_event(iters[i]);
+      //printf("type: 0x%X\n", ptr->type);
+      if (ptrs[i]->type == EV_NOTE_ON && ptrs[i]->delta_time * conversion <= SDL_GetTicks() - ticks[i]){
+        fluid_synth_noteon(synth, 0, ((MIDIChannelEventData*)(ptrs[i]->data))->param1,
+            ((MIDIChannelEventData*)(ptrs[i]->data))->param2);
+        iters[i] = MIDIEventList_next_event(iters[i]);
+        ticks[i] = SDL_GetTicks();
+      } else if (ptrs[i]->type == EV_NOTE_OFF && ptrs[i]->delta_time * conversion <= SDL_GetTicks() - ticks[i]){
+        fluid_synth_noteoff(synth, 0, ((MIDIChannelEventData*)(ptrs[i]->data))->param1);
+        iters[i] = MIDIEventList_next_event(iters[i]);
+        ticks[i] = SDL_GetTicks();
+      } else if (ptrs[i]->type != EV_NOTE_OFF && ptrs[i]->type != EV_NOTE_ON /*&&
+                                                                       ptr->delta_time * conversion <= SDL_GetTicks() - ticks*/){
+        iters[i] = MIDIEventList_next_event(iters[i]);
+        ticks[i] = SDL_GetTicks();
+      }
     }
   }
 
@@ -120,8 +114,9 @@ int main(int argc, char * argv[]){
   delete_fluid_audio_driver(adriver);
   delete_fluid_synth(synth);
   delete_fluid_settings(settings);
-  MIDITrack_delete_events(&track);
-  MIDITrack_delete_events(&track2);
+  for (int i = 0; i < midi.header.num_tracks; i++){
+    MIDITrack_delete_events(&tracks[i]);
+  }
   fclose(midi.file);
   return 0;
 }
