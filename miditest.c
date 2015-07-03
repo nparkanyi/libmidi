@@ -92,7 +92,8 @@ int main(int argc, char * argv[]){
       printf("track %d failed to load!\n", i);
     }
   }
-  while (!MIDIEventList_is_end_iter(iters[0])){
+  while(1){
+//  while (!MIDIEventList_is_end_iter(iters[0])){
     for (int i = 0; i < midi.header.num_tracks; i++){
 //    for (int i = 2; i < 3; i++){
       ptrs[i] = MIDIEventList_get_event(iters[i]);
