@@ -169,6 +169,7 @@ int MIDITrack_add_channel_event(MIDITrack * track,
                                 guint8 type, guint8 channel,
                                 guint32 delta, guint8 param1,
                                 guint8 param2);
+int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta);
 void MIDITrack_delete_events(MIDITrack * track);
 
 #endif

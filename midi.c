@@ -43,7 +43,6 @@ int MIDIFile_load(MIDIFile * midi, const guint8 * filename){
   return r;
 }
 
-
 int MIDIHeader_load(MIDIHeader * header, FILE * file){
   int i;
   guint8 * name = "MThd";
@@ -202,12 +201,16 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
     if (fread(&ev_type_channel, sizeof(guint8), 1, file) < 1)
       return FILE_IO_ERROR;
 
-    //sys and meta events, ignoring these for now
+    //sys and meta events, ignoring these for now, except for END_TRACK
     if (ev_type_channel == 0xF0 ||
         ev_type_channel == 0xFF){
       if (fread(&ev_type, sizeof(guint8), 1, file) < 1)
         return FILE_IO_ERROR;
-
+        
+      if (ev_type == META_END_TRACK){
+        r = MIDITrack_add_end_track_event(track, ev_delta_time);
+      }
+      
       if (VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
       if (fseek(file, skip_bytes, SEEK_CUR) != 0)
@@ -258,6 +261,17 @@ int MIDITrack_add_channel_event(MIDITrack * track,
   ((MIDIChannelEventData*)(temp.data))->param1 = param1;
   ((MIDIChannelEventData*)(temp.data))->param2 = param2;
 
+  return MIDIEventList_append(track->list, temp);
+}
+
+int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta){
+  MIDIEvent temp;
+  
+  temp.type = META_END_TRACK;
+  temp.delta_time = delta;
+  
+  temp.data = NULL;
+  
   return MIDIEventList_append(track->list, temp);
 }
 

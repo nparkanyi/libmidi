@@ -43,6 +43,9 @@ int main(int argc, char * argv[]){
         puts("ERROR: failed to allocate memory!");
         break;
     }
+    if (!tracks[i].list->tail){
+      printf("track %d: invalid event list\n");
+    }
   }
 
   printf("header size: %d\n", (int)midi.header.size);
@@ -85,10 +88,13 @@ int main(int argc, char * argv[]){
   }*/
   for (int i = 0; i < midi.header.num_tracks; i++){
     iters[i] = MIDIEventList_get_start_iter(tracks[i].list);
+    if (!iters[i].node){
+      printf("track %d failed to load!\n", i);
+    }
   }
-  while (!MIDIEventList_is_end_iter(iters[2])){
-    //for (int i = 0; i < midi.header.num_tracks; i++){
-    for (int i = 2; i < 3; i++){
+  while (!MIDIEventList_is_end_iter(iters[0])){
+    for (int i = 0; i < midi.header.num_tracks; i++){
+//    for (int i = 2; i < 3; i++){
       ptrs[i] = MIDIEventList_get_event(iters[i]);
       //printf("type: 0x%X\n", ptr->type);
       if (ptrs[i]->type == EV_NOTE_ON && ptrs[i]->delta_time * conversion <= SDL_GetTicks() - ticks[i]){
