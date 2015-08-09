@@ -206,11 +206,11 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file){
         ev_type_channel == 0xFF){
       if (fread(&ev_type, sizeof(guint8), 1, file) < 1)
         return FILE_IO_ERROR;
-        
+
       if (ev_type == META_END_TRACK){
         r = MIDITrack_add_end_track_event(track, ev_delta_time);
       }
-      
+
       if (VLV_read(file, &skip_bytes, &vlv_read) == VLV_ERROR)
         return FILE_IO_ERROR;
       if (fseek(file, skip_bytes, SEEK_CUR) != 0)
@@ -266,12 +266,12 @@ int MIDITrack_add_channel_event(MIDITrack * track,
 
 int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta){
   MIDIEvent temp;
-  
+
   temp.type = META_END_TRACK;
   temp.delta_time = delta;
-  
+
   temp.data = NULL;
-  
+
   return MIDIEventList_append(track->list, temp);
 }
 
