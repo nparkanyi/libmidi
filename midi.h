@@ -6,6 +6,7 @@
 #define MIDI_H
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <glib.h>
 
 enum errors{
@@ -146,7 +147,7 @@ typedef struct {
  * set bytes_read to NULL if you don't need it */
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read);
 
-int MIDIFile_load(MIDIFile * midi, const guint8 * filename);
+int MIDIFile_load(MIDIFile * midi, const char * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
 

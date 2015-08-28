@@ -8,6 +8,7 @@
 
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
   guint8 byte;
+  guint8 a;
   int i;
 
   *val = 0x00;
@@ -29,7 +30,7 @@ int VLV_read(FILE * buf, guint32 * val, int * bytes_read){
 }
 
 
-int MIDIFile_load(MIDIFile * midi, const guint8 * filename){
+int MIDIFile_load(MIDIFile * midi, const char * filename){
   int r;
 
   midi->file = fopen(filename, "r");
@@ -45,7 +46,7 @@ int MIDIFile_load(MIDIFile * midi, const guint8 * filename){
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file){
   int i;
-  guint8 * name = "MThd";
+  char * name = "MThd";
 
   if (fread(&header->id, sizeof(guint8), 4, file) < 1)
     return FILE_INVALID;
@@ -154,7 +155,7 @@ void MIDIEventList_delete(MIDIEventList * list){
 
 int MIDITrack_load(MIDITrack * track, FILE * file){
   int i;
-  guint8 * name = "MTrk";
+  char * name = "MTrk";
 
   if (fread(&track->header.id, sizeof(guint8), 4, file) < 1)
     return FILE_IO_ERROR;
