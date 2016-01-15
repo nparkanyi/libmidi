@@ -40,7 +40,12 @@ typedef enum {
   META_MARKER,
   META_CUE_POINT,
   META_CHANNEL_PREFIX=0x20,
-  META_END_TRACK = 0x2F
+  META_END_TRACK = 0x2F,
+  META_TEMPO_CHANGE = 0x51,
+  META_SMPTE_OFFSET = 0x54,
+  META_TIME_SIGNATURE = 0x58,
+  META_KEY_SIGNATURE,
+  META_SEQUENCER_SPECIFIC = 0x7F
 } MetaType;
 
 typedef enum {
@@ -170,7 +175,10 @@ int MIDITrack_add_channel_event(MIDITrack * track,
                                 guint8 type, guint8 channel,
                                 guint32 delta, guint8 param1,
                                 guint8 param2);
+
 int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta);
+int MIDITrack_add_tempo_change_event(MIDITrack * track, guint32 delta_time,
+                                     guint32 tempo);
 void MIDITrack_delete_events(MIDITrack * track);
 
 #endif
