@@ -307,7 +307,15 @@ int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta){
 int MIDITrack_add_tempo_change_event(MIDITrack * track, guint32 delta_time,
                                      guint32 tempo)
 {
+  MIDIEvent temp;
 
+  temp.type = META_END_TRACK;
+  temp.delta_time = delta_time;
+
+  temp.data = malloc(sizeof(guint32));
+  *(guint32*)temp.data = tempo;
+
+  return MIDIEventList_append(track->list, temp);
 }
 
 void MIDITrack_delete_events(MIDITrack * track)
