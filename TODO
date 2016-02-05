@@ -1,0 +1,5 @@
+Stuff to fix:
+-------------
+
+* in some places, FILE_IO_ERROR where maybe FILE_INVALID is more appropriate?
+* processing meta events should get its own function

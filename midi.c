@@ -215,9 +215,8 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
     if (fread(&ev_type_channel, sizeof(guint8), 1, file) < 1)
       return FILE_IO_ERROR;
 
-    //sys and meta events, ignoring these for now, except for END_TRACK
-    if (ev_type_channel == 0xF0 ||
-        ev_type_channel == 0xFF){
+    //meta events
+    if (ev_type_channel == 0xFF){
       if (fread(&ev_type, sizeof(guint8), 1, file) < 1)
         return FILE_IO_ERROR;
 
@@ -244,6 +243,12 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
           return FILE_INVALID;
       }
       continue;
+    //sysex events, ignore all these
+    } else if (ev_type_channel == 0xF0 || ev_type_channel == 0xF7){
+      if (VLV_read(file, &meta_size, &vlv_read) == VLV_ERROR)
+        return FILE_IO_ERROR;
+      if (fseek(file, meta_size, SEEK_CUR) != 0)
+        return FILE_INVALID;
     }
 
     //channel events
