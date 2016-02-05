@@ -1,5 +1,7 @@
 Stuff to fix:
 -------------
 
+* when reading in MIDI channel events, we're always reading two bytes,
+  but some event types only have one (explains the track reading problems?)
 * in some places, FILE_IO_ERROR where maybe FILE_INVALID is more appropriate?
 * processing meta events should get its own function
