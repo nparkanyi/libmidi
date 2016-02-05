@@ -249,6 +249,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
         return FILE_IO_ERROR;
       if (fseek(file, meta_size, SEEK_CUR) != 0)
         return FILE_INVALID;
+      continue;
     }
 
     //channel events
@@ -263,12 +264,20 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
       param1 = ev_type_channel;
     }
 
-    if (fread(&param2, sizeof(guint8), 1, file) < 1)
-      return FILE_IO_ERROR;
+    //channel events that only have 1 parameter
+    if (ev_type == EV_PROGRAM_CHANGE ||
+        ev_type == EV_CHANNEL_AFTERTOUCH){
+      r = MIDITrack_add_channel_event(track, ev_type, ev_channel,
+                                      ev_delta_time, param1, 0);
+    } else {
 
-    r = MIDITrack_add_channel_event(track, ev_type, ev_channel,
-                                            ev_delta_time, param1,
-                                            param2);
+      if (fread(&param2, sizeof(guint8), 1, file) < 1)
+        return FILE_IO_ERROR;
+
+      r = MIDITrack_add_channel_event(track, ev_type, ev_channel,
+          ev_delta_time, param1,
+          param2);
+    }
     if (r != SUCCESS)
       return r;
   } while (ev_type != META_END_TRACK);
