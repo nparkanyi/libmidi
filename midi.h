@@ -155,6 +155,10 @@ int VLV_read(FILE * buf, guint32 * val, int * bytes_read);
 int MIDIFile_load(MIDIFile * midi, const char * filename);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
+//returns a factor that converts delta times to milliseconds,
+// tempo in microseconds per quarter note (will be ignored if using timecodes).
+// You must get a new conversion factor after any tempo change event.
+float MIDIHeader_getTempoConversion(MIDIHeader * header, guint32 tempo);
 
 MIDIEventList * MIDIEventList_create();
 MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list);
