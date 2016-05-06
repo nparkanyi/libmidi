@@ -262,6 +262,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
         tempo = malloc(sizeof(guint32));
         if (!tempo) return MEMORY_ERROR;
 
+        *(char*)(tempo) = 0;
         if (fread((char*)(tempo) + 1, sizeof(guint8), 3, file) < 1)
           return FILE_IO_ERROR;
         *tempo = GUINT32_FROM_BE(*tempo);
