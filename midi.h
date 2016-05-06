@@ -180,9 +180,8 @@ int MIDITrack_add_channel_event(MIDITrack * track,
                                 guint32 delta, guint8 param1,
                                 guint8 param2);
 
-int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta);
-int MIDITrack_add_tempo_change_event(MIDITrack * track, guint32 delta_time,
-                                     guint32 tempo);
+int MIDITrack_add_meta_event(MIDITrack * track, guint32 delta, MetaType type,
+                             void * data);
 void MIDITrack_delete_events(MIDITrack * track);
 
 #endif

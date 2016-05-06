@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "midi.h"
 
+
 int VLV_read(FILE * buf, guint32 * val, int * bytes_read)
 {
   guint8 byte;
@@ -46,6 +47,7 @@ int MIDIFile_load(MIDIFile * midi, const char * filename)
   return r;
 }
 
+
 int MIDIHeader_load(MIDIHeader * header, FILE * file)
 {
   int i;
@@ -77,6 +79,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file)
   return SUCCESS;
 }
 
+
 float MIDIHeader_getTempoConversion(MIDIHeader * header, guint32 tempo)
 {
   if ((header->time_div & 0x8000) == 0){
@@ -89,6 +92,7 @@ float MIDIHeader_getTempoConversion(MIDIHeader * header, guint32 tempo)
   }
 }
 
+
 MIDIEventList * MIDIEventList_create()
 {
   MIDIEventList * ret = malloc(sizeof(MIDIEventList));
@@ -99,6 +103,7 @@ MIDIEventList * MIDIEventList_create()
   return ret;
 }
 
+
 MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list)
 {
   MIDIEventIterator iter = { list->head, list };
@@ -106,12 +111,14 @@ MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list)
   return iter;
 }
 
+
 MIDIEventIterator MIDIEventList_get_end_iter(MIDIEventList * list)
 {
   MIDIEventIterator iter = { list->tail, list };
 
   return iter;
 }
+
 
 MIDIEventIterator MIDIEventList_next_event(MIDIEventIterator iter)
 {
@@ -125,16 +132,19 @@ MIDIEventIterator MIDIEventList_next_event(MIDIEventIterator iter)
   }
 }
 
+
 MIDIEvent * MIDIEventList_get_event(MIDIEventIterator iter)
 {
   return &(iter.node->ev);
 }
+
 
 bool MIDIEventList_is_end_iter(MIDIEventIterator iter)
 {
   //return (iter.node == iter.list->tail);
   return !(iter.node->next);
 }
+
 
 int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
                          MIDIEvent ev)
@@ -160,10 +170,12 @@ int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
   return SUCCESS;
 }
 
+
 int MIDIEventList_append(MIDIEventList * list, MIDIEvent ev)
 {
   return MIDIEventList_insert(list, MIDIEventList_get_end_iter(list), ev);
 }
+
 
 void MIDIEventList_delete(MIDIEventList * list)
 {
@@ -176,6 +188,7 @@ void MIDIEventList_delete(MIDIEventList * list)
   }
   free(list);
 }
+
 
 int MIDITrack_load(MIDITrack * track, FILE * file)
 {
@@ -204,6 +217,7 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
   //MIDITrack_load_events(track, file);
   return MIDITrack_load_events(track, file);
 }
+
 
 int MIDITrack_load_events(MIDITrack * track, FILE * file)
 {
@@ -239,16 +253,19 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
       if (ev_type == META_END_TRACK){
         if (meta_size != 0)
           return FILE_INVALID;
-        r = MIDITrack_add_end_track_event(track, ev_delta_time);
+        r = MIDITrack_add_meta_event(track, ev_delta_time, META_END_TRACK, NULL);
       } else if (ev_type == META_TEMPO_CHANGE){
         if (meta_size != 3)
           return FILE_INVALID;
 
-        guint32 tempo = 0;
-        if (fread((char*)(&tempo) + 1, sizeof(guint8), 3, file) < 1)
+        guint32 * tempo = NULL;
+        tempo = malloc(sizeof(guint32));
+        if (!tempo) return MEMORY_ERROR;
+
+        if (fread((char*)(tempo) + 1, sizeof(guint8), 3, file) < 1)
           return FILE_IO_ERROR;
-        tempo = GUINT32_FROM_BE(tempo);
-        r = MIDITrack_add_tempo_change_event(track, ev_delta_time, tempo);
+        *tempo = GUINT32_FROM_BE(*tempo);
+        r = MIDITrack_add_meta_event(track, ev_delta_time, META_TEMPO_CHANGE, tempo);
       } else {
         //for ignored events, skip their data bytes
         if (fseek(file, meta_size, SEEK_CUR) != 0)
@@ -296,6 +313,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
   return SUCCESS;
 }
 
+
 int MIDITrack_add_channel_event(MIDITrack * track,
                                  guint8 type, guint8 channel,
                                  guint32 delta, guint8 param1,
@@ -319,30 +337,19 @@ int MIDITrack_add_channel_event(MIDITrack * track,
   return MIDIEventList_append(track->list, temp);
 }
 
-int MIDITrack_add_end_track_event(MIDITrack * track, guint32 delta){
-  MIDIEvent temp;
 
-  temp.type = META_END_TRACK;
-  temp.delta_time = delta;
-
-  temp.data = NULL;
-
-  return MIDIEventList_append(track->list, temp);
-}
-
-int MIDITrack_add_tempo_change_event(MIDITrack * track, guint32 delta_time,
-                                     guint32 tempo)
+int MIDITrack_add_meta_event(MIDITrack * track, guint32 delta, MetaType type,
+                             void * data)
 {
   MIDIEvent temp;
 
-  temp.type = META_END_TRACK;
-  temp.delta_time = delta_time;
-
-  temp.data = malloc(sizeof(guint32));
-  *(guint32*)temp.data = tempo;
+  temp.type = type;
+  temp.delta_time = delta;
+  temp.data = data;
 
   return MIDIEventList_append(track->list, temp);
 }
+
 
 void MIDITrack_delete_events(MIDITrack * track)
 {
