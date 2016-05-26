@@ -415,3 +415,11 @@ void MIDITrack_delete_events(MIDITrack * track)
   MIDIEventList_delete(track->list);
 }
 
+unsigned long SMPTE_to_milliseconds(SMPTEData smpte)
+{
+  return 3600000 * smpte.hours
+        + 60000 * smpte.minutes
+        + 1000 * smpte.seconds
+        + (1000.0f / smpte.framerate) * smpte.frames
+        + (10.0f / smpte.framerate) * smpte.subframes;
+}

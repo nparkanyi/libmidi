@@ -193,4 +193,6 @@ int MIDITrack_add_meta_event(MIDITrack * track, guint32 delta, MetaType type,
                              void * data);
 void MIDITrack_delete_events(MIDITrack * track);
 
+unsigned long SMPTE_to_milliseconds(SMPTEData smpte);
+
 #endif
