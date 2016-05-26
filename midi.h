@@ -132,6 +132,15 @@ typedef struct {
 } MIDIChannelEventData;
 
 typedef struct {
+  float framerate;
+  guint8 hours;
+  guint8 minutes;
+  guint8 seconds;
+  guint8 frames;
+  guint8 subframes; //100ths of a frame
+} SMPTEData;
+
+typedef struct {
   guint8 id[4];
   guint32 size;
 } MIDITrackHeader;

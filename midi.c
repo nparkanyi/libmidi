@@ -219,6 +219,24 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
 }
 
 
+float hour_byte_to_fps(guint8 byte)
+{
+  guint8 rate = byte >> 5; //remove all but the rate bits
+
+  switch(rate){
+    case 0:
+      return 24.0f;
+    case 1:
+      return 25.0f;
+    case 2:
+      return 29.97f;
+    case 3:
+      return 30.0f;
+    default:
+      return 0.0f;
+  }
+}
+
 int MIDITrack_load_events(MIDITrack * track, FILE * file)
 {
   int bytes_read = 0;
@@ -263,10 +281,50 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
         if (!tempo) return MEMORY_ERROR;
 
         *(char*)(tempo) = 0;
-        if (fread((char*)(tempo) + 1, sizeof(guint8), 3, file) < 1)
+        if (fread((char*)(tempo) + 1, sizeof(guint8), 3, file) < 1){
+          free(tempo);
           return FILE_IO_ERROR;
+        }
         *tempo = GUINT32_FROM_BE(*tempo);
         r = MIDITrack_add_meta_event(track, ev_delta_time, META_TEMPO_CHANGE, tempo);
+      } else if (ev_type == META_SMPTE_OFFSET){
+        if (meta_size != 5)
+          return FILE_INVALID;
+
+        SMPTEData * smpte = NULL;
+        smpte = malloc(sizeof(SMPTEData));
+        if (!smpte) return MEMORY_ERROR;
+
+        if (fread(&(smpte->hours), sizeof(guint8), 1, file) < 1)
+          return FILE_INVALID;
+
+        smpte->framerate = hour_byte_to_fps(smpte->hours);
+        if (smpte->framerate == 0.0f){
+          free(smpte);
+          return FILE_INVALID;
+        }
+
+        if (fread(&(smpte->minutes), sizeof(guint8), 1, file) < 1){
+          free(smpte);
+          return FILE_INVALID;
+        }
+
+        if (fread(&(smpte->seconds), sizeof(guint8), 1, file) < 1){
+          free(smpte);
+          return FILE_INVALID;
+        }
+
+        if (fread(&(smpte->frames), sizeof(guint8), 1, file) < 1){
+          free(smpte);
+          return FILE_INVALID;
+        }
+
+        if (fread(&(smpte->subframes), sizeof(guint8), 1, file) < 1){
+          free(smpte);
+          return FILE_INVALID;
+        }
+
+        r = MIDITrack_add_meta_event(track, ev_delta_time, META_SMPTE_OFFSET, smpte);
       } else {
         //for ignored events, skip their data bytes
         if (fseek(file, meta_size, SEEK_CUR) != 0)
