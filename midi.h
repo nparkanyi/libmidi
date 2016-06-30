@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <glib.h>
+#include <stdint.h>
 
 enum errors{
   SUCCESS,
@@ -93,16 +93,16 @@ typedef enum {
 } ControllerType;
 
 typedef struct {
-  guint8 id[4];
-  guint32 size;
-  guint16 format;
-  guint16 num_tracks;
-  guint16 time_div;
+  uint8_t id[4];
+  uint32_t size;
+  uint16_t format;
+  uint16_t num_tracks;
+  uint16_t time_div;
 } MIDIHeader;
 
 typedef struct {
   EventType type;
-  guint32 delta_time;
+  uint32_t delta_time;
   /* pointer to struct of type determined by event type
    * for ghetto polymorphism */
   void * data;
@@ -126,23 +126,23 @@ typedef struct {
 } MIDIEventIterator;
 
 typedef struct {
-  guint8 channel;
-  guint8 param1;
-  guint8 param2;
+  uint8_t channel;
+  uint8_t param1;
+  uint8_t param2;
 } MIDIChannelEventData;
 
 typedef struct {
   float framerate;
-  guint8 hours;
-  guint8 minutes;
-  guint8 seconds;
-  guint8 frames;
-  guint8 subframes; //100ths of a frame
+  uint8_t hours;
+  uint8_t minutes;
+  uint8_t seconds;
+  uint8_t frames;
+  uint8_t subframes; //100ths of a frame
 } SMPTEData;
 
 typedef struct {
-  guint8 id[4];
-  guint32 size;
+  uint8_t id[4];
+  uint32_t size;
 } MIDITrackHeader;
 
 typedef struct {
@@ -159,7 +159,7 @@ typedef struct {
  * never larger than 4 bytes
  * returns VLV_ERROR if fails
  * set bytes_read to NULL if you don't need it */
-int VLV_read(FILE * buf, guint32 * val, int * bytes_read);
+int VLV_read(FILE * buf, uint32_t * val, int * bytes_read);
 
 int MIDIFile_load(MIDIFile * midi, const char * filename);
 
@@ -167,7 +167,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file);
 //returns a factor that converts delta times to milliseconds,
 // tempo in microseconds per quarter note (will be ignored if using timecodes).
 // You must get a new conversion factor after any tempo change event.
-float MIDIHeader_getTempoConversion(MIDIHeader * header, guint32 tempo);
+float MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo);
 
 MIDIEventList * MIDIEventList_create();
 MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list);
@@ -185,11 +185,11 @@ void MIDIEventList_delete(MIDIEventList * list);
 int MIDITrack_load(MIDITrack * track, FILE * file);
 int MIDITrack_load_events(MIDITrack * track, FILE * file);
 int MIDITrack_add_channel_event(MIDITrack * track,
-                                guint8 type, guint8 channel,
-                                guint32 delta, guint8 param1,
-                                guint8 param2);
+                                uint8_t type, uint8_t channel,
+                                uint32_t delta, uint8_t param1,
+                                uint8_t param2);
 
-int MIDITrack_add_meta_event(MIDITrack * track, guint32 delta, MetaType type,
+int MIDITrack_add_meta_event(MIDITrack * track, uint32_t delta, MetaType type,
                              void * data);
 void MIDITrack_delete_events(MIDITrack * track);
 

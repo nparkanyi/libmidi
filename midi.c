@@ -6,11 +6,26 @@
 #include <stdlib.h>
 #include "midi.h"
 
-
-int VLV_read(FILE * buf, guint32 * val, int * bytes_read)
+//convert big-endian data to little endian in-place, does nothing on BE host
+void be_to_le(void* vdata, int bytes)
 {
-  guint8 byte;
-  guint8 a;
+//NOTE: these preprocessor variables are gcc-specific!
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    char tmp;
+    unsigned char* data = vdata;
+    
+    for (int i = 0; i < bytes / 2; i++){
+        tmp = *(data + i);
+        *(data + i) = *(data + bytes - 1 - i);
+        *(data + bytes - 1 - i) = tmp;
+    }
+#endif
+}
+
+int VLV_read(FILE * buf, uint32_t * val, int * bytes_read)
+{
+  uint8_t byte;
+  uint8_t a;
   int i;
 
   *val = 0x00;
@@ -53,22 +68,22 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file)
   int i;
   char * name = "MThd";
 
-  if (fread(&header->id, sizeof(guint8), 4, file) < 1)
+  if (fread(&header->id, sizeof(uint8_t), 4, file) < 1)
     return FILE_INVALID;
-  if (fread(&header->size, sizeof(guint32), 1, file) < 1)
+  if (fread(&header->size, sizeof(uint32_t), 1, file) < 1)
     return FILE_INVALID;
-  if (fread(&header->format, sizeof(guint16), 1, file) < 1)
+  if (fread(&header->format, sizeof(uint16_t), 1, file) < 1)
     return FILE_INVALID;
-  if (fread(&header->num_tracks, sizeof(guint16), 1, file) < 1)
+  if (fread(&header->num_tracks, sizeof(uint16_t), 1, file) < 1)
     return FILE_INVALID;
-  if (fread(&header->time_div, sizeof(guint16), 1, file) < 1)
+  if (fread(&header->time_div, sizeof(uint16_t), 1, file) < 1)
     return FILE_INVALID;
 
   //swap endianness (does nothing if host is BE)
-  header->size = GUINT32_FROM_BE(header->size);
-  header->format = GUINT16_FROM_BE(header->format);
-  header->num_tracks = GUINT16_FROM_BE(header->num_tracks);
-  header->time_div = GUINT16_FROM_BE(header->time_div);
+  be_to_le(&header->size, sizeof(uint32_t));
+  be_to_le(&header->format, sizeof(uint16_t));
+  be_to_le(&header->num_tracks, sizeof(uint16_t));
+  be_to_le(&header->time_div, sizeof(uint16_t));
 
   //if id is not "MThd", not a MIDI file
   for (i = 0; i < 4; i++){
@@ -80,7 +95,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file)
 }
 
 
-float MIDIHeader_getTempoConversion(MIDIHeader * header, guint32 tempo)
+float MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo)
 {
   if ((header->time_div & 0x8000) == 0){
     //metrical timing
@@ -195,13 +210,13 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
   int i;
   char * name = "MTrk";
 
-  if (fread(&track->header.id, sizeof(guint8), 4, file) < 1)
+  if (fread(&track->header.id, sizeof(uint8_t), 4, file) < 1)
     return FILE_IO_ERROR;
-  if (fread(&track->header.size, sizeof(guint32), 1, file) < 1)
+  if (fread(&track->header.size, sizeof(uint32_t), 1, file) < 1)
     return FILE_IO_ERROR;
 
   //swap endianness
-  track->header.size = GUINT32_FROM_BE(track->header.size);
+  be_to_le(&track->header.size, sizeof(uint32_t));
 
   //if id is not "MTrk", not a track
   for (i = 0; i < 4; i++){
@@ -219,9 +234,9 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
 }
 
 
-float hour_byte_to_fps(guint8 byte)
+float hour_byte_to_fps(uint8_t byte)
 {
-  guint8 rate = byte >> 5; //remove all but the rate bits
+  uint8_t rate = byte >> 5; //remove all but the rate bits
 
   switch(rate){
     case 0:
@@ -241,27 +256,27 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
 {
   int bytes_read = 0;
   int vlv_read;
-  guint32 ev_delta_time;
+  uint32_t ev_delta_time;
   //if a channel event, type and channel # packed into one byte
   //otherwise, entire byte represents the type :{
-  guint8 ev_type_channel;
-  guint8 ev_type;
-  guint8 ev_channel;
-  guint8 param1, param2;
+  uint8_t ev_type_channel;
+  uint8_t ev_type;
+  uint8_t ev_channel;
+  uint8_t param1, param2;
   const int size = track->header.size;
-  guint32 meta_size;
+  uint32_t meta_size;
   int r;
 
   do {
     if (VLV_read(file, &ev_delta_time, &vlv_read) == VLV_ERROR)
       return FILE_IO_ERROR;
 
-    if (fread(&ev_type_channel, sizeof(guint8), 1, file) < 1)
+    if (fread(&ev_type_channel, sizeof(uint8_t), 1, file) < 1)
       return FILE_IO_ERROR;
 
     //meta events
     if (ev_type_channel == 0xFF){
-      if (fread(&ev_type, sizeof(guint8), 1, file) < 1)
+      if (fread(&ev_type, sizeof(uint8_t), 1, file) < 1)
         return FILE_IO_ERROR;
 
 
@@ -276,16 +291,16 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
         if (meta_size != 3)
           return FILE_INVALID;
 
-        guint32 * tempo = NULL;
-        tempo = malloc(sizeof(guint32));
+        uint32_t * tempo = NULL;
+        tempo = malloc(sizeof(uint32_t));
         if (!tempo) return MEMORY_ERROR;
 
         *(char*)(tempo) = 0;
-        if (fread((char*)(tempo) + 1, sizeof(guint8), 3, file) < 1){
+        if (fread((char*)(tempo) + 1, sizeof(uint8_t), 3, file) < 1){
           free(tempo);
           return FILE_IO_ERROR;
         }
-        *tempo = GUINT32_FROM_BE(*tempo);
+        be_to_le(tempo, sizeof(uint32_t));
         r = MIDITrack_add_meta_event(track, ev_delta_time, META_TEMPO_CHANGE, tempo);
       } else if (ev_type == META_SMPTE_OFFSET){
         if (meta_size != 5)
@@ -295,7 +310,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
         smpte = malloc(sizeof(SMPTEData));
         if (!smpte) return MEMORY_ERROR;
 
-        if (fread(&(smpte->hours), sizeof(guint8), 1, file) < 1)
+        if (fread(&(smpte->hours), sizeof(uint8_t), 1, file) < 1)
           return FILE_INVALID;
 
         smpte->framerate = hour_byte_to_fps(smpte->hours);
@@ -304,22 +319,22 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
           return FILE_INVALID;
         }
 
-        if (fread(&(smpte->minutes), sizeof(guint8), 1, file) < 1){
+        if (fread(&(smpte->minutes), sizeof(uint8_t), 1, file) < 1){
           free(smpte);
           return FILE_INVALID;
         }
 
-        if (fread(&(smpte->seconds), sizeof(guint8), 1, file) < 1){
+        if (fread(&(smpte->seconds), sizeof(uint8_t), 1, file) < 1){
           free(smpte);
           return FILE_INVALID;
         }
 
-        if (fread(&(smpte->frames), sizeof(guint8), 1, file) < 1){
+        if (fread(&(smpte->frames), sizeof(uint8_t), 1, file) < 1){
           free(smpte);
           return FILE_INVALID;
         }
 
-        if (fread(&(smpte->subframes), sizeof(guint8), 1, file) < 1){
+        if (fread(&(smpte->subframes), sizeof(uint8_t), 1, file) < 1){
           free(smpte);
           return FILE_INVALID;
         }
@@ -346,7 +361,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
     if ((ev_type_channel & 0x80) != 0){
       ev_type = (ev_type_channel & 0xF0) >> 4;
       ev_channel = ev_type_channel & 0x0F;
-      if (fread(&param1, sizeof(guint8), 1, file) < 1)
+      if (fread(&param1, sizeof(uint8_t), 1, file) < 1)
         return FILE_IO_ERROR;
     } else {
       param1 = ev_type_channel;
@@ -359,7 +374,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
                                       ev_delta_time, param1, 0);
     } else {
 
-      if (fread(&param2, sizeof(guint8), 1, file) < 1)
+      if (fread(&param2, sizeof(uint8_t), 1, file) < 1)
         return FILE_IO_ERROR;
 
       r = MIDITrack_add_channel_event(track, ev_type, ev_channel,
@@ -374,9 +389,9 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
 
 
 int MIDITrack_add_channel_event(MIDITrack * track,
-                                 guint8 type, guint8 channel,
-                                 guint32 delta, guint8 param1,
-                                 guint8 param2)
+                                 uint8_t type, uint8_t channel,
+                                 uint32_t delta, uint8_t param1,
+                                 uint8_t param2)
 {
   MIDIEvent temp;
   int r;
@@ -397,7 +412,7 @@ int MIDITrack_add_channel_event(MIDITrack * track,
 }
 
 
-int MIDITrack_add_meta_event(MIDITrack * track, guint32 delta, MetaType type,
+int MIDITrack_add_meta_event(MIDITrack * track, uint32_t delta, MetaType type,
                              void * data)
 {
   MIDIEvent temp;
