@@ -4,7 +4,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "midi.h"
+#include "libmidi.h"
 
 //convert big-endian data to little endian in-place, does nothing on BE host
 void be_to_le(void* vdata, int bytes)
@@ -12,8 +12,8 @@ void be_to_le(void* vdata, int bytes)
 //NOTE: these preprocessor variables are gcc-specific!
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     char tmp;
-    unsigned char* data = vdata;
-    
+    unsigned char* data = (unsigned char*)vdata;
+
     for (int i = 0; i < bytes / 2; i++){
         tmp = *(data + i);
         *(data + i) = *(data + bytes - 1 - i);
@@ -110,7 +110,7 @@ float MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo)
 
 MIDIEventList * MIDIEventList_create()
 {
-  MIDIEventList * ret = malloc(sizeof(MIDIEventList));
+  MIDIEventList * ret = (MIDIEventList*)malloc(sizeof(MIDIEventList));
 
   ret->tail = NULL;
   ret->head = NULL;
@@ -137,11 +137,11 @@ MIDIEventIterator MIDIEventList_get_end_iter(MIDIEventList * list)
 
 MIDIEventIterator MIDIEventList_next_event(MIDIEventIterator iter)
 {
-  MIDIEventIterator new;
+  MIDIEventIterator _new;
 
   if (iter.node->next){
-    new.node = iter.node->next;
-    return new;
+    _new.node = iter.node->next;
+    return _new;
   } else {
     return iter;
   }
@@ -164,23 +164,23 @@ bool MIDIEventList_is_end_iter(MIDIEventIterator iter)
 int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
                          MIDIEvent ev)
 {
-  MIDIEventNode * new = malloc(sizeof(MIDIEventNode));
+  MIDIEventNode * _new = (MIDIEventNode*)malloc(sizeof(MIDIEventNode));
 
-  if (!new)
+  if (!_new)
     return MEMORY_ERROR;
 
-  new->ev = ev;
+  _new->ev = ev;
   if (iter.node){
-    new->prev = iter.node;
-    new->next = iter.node->next;
-    iter.node->next = new;
-    if (new->prev == iter.list->tail)
-      iter.list->tail = new;
+    _new->prev = iter.node;
+    _new->next = iter.node->next;
+    iter.node->next = _new;
+    if (_new->prev == iter.list->tail)
+      iter.list->tail = _new;
   } else {
-    new->next = list->head;
-    list->head = new;
+    _new->next = list->head;
+    list->head = _new;
     if (!list->tail)
-      list->tail = new;
+      list->tail = _new;
   }
   return SUCCESS;
 }
@@ -292,7 +292,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
           return FILE_INVALID;
 
         uint32_t * tempo = NULL;
-        tempo = malloc(sizeof(uint32_t));
+        tempo = (uint32_t*)malloc(sizeof(uint32_t));
         if (!tempo) return MEMORY_ERROR;
 
         *(char*)(tempo) = 0;
@@ -307,7 +307,7 @@ int MIDITrack_load_events(MIDITrack * track, FILE * file)
           return FILE_INVALID;
 
         SMPTEData * smpte = NULL;
-        smpte = malloc(sizeof(SMPTEData));
+        smpte = (SMPTEData*)malloc(sizeof(SMPTEData));
         if (!smpte) return MEMORY_ERROR;
 
         if (fread(&(smpte->hours), sizeof(uint8_t), 1, file) < 1)
@@ -396,7 +396,7 @@ int MIDITrack_add_channel_event(MIDITrack * track,
   MIDIEvent temp;
   int r;
 
-  temp.type = type;
+  temp.type = (EventType)type;
   temp.delta_time = delta;
 
   temp.data = malloc(sizeof(MIDIChannelEventData));
@@ -417,7 +417,7 @@ int MIDITrack_add_meta_event(MIDITrack * track, uint32_t delta, MetaType type,
 {
   MIDIEvent temp;
 
-  temp.type = type;
+  temp.type = (EventType)type;
   temp.delta_time = delta;
   temp.data = data;
 

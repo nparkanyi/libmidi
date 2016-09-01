@@ -2,20 +2,20 @@
  * Copyright (c) 2014 Nicholas Parkanyi
  * See LICENSE
 */
-#ifndef MIDI_H
-#define MIDI_H
+#ifndef LIBMIDI_H
+#define LIBMIDI_H
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 
-enum errors{
+typedef enum {
   SUCCESS,
   FILE_IO_ERROR,
   FILE_INVALID,
   VLV_ERROR,
   MEMORY_ERROR
-};
+} MIDIError;
 
 //channel events
 typedef enum {
