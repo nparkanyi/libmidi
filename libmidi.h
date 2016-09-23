@@ -162,6 +162,7 @@ typedef struct {
 int VLV_read(FILE * buf, uint32_t * val, int * bytes_read);
 
 int MIDIFile_load(MIDIFile * midi, const char * filename);
+void MIDIFile_delete(MIDIFile * midi);
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file);
 //returns a factor that converts delta times to milliseconds,

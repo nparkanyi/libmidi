@@ -62,6 +62,10 @@ int MIDIFile_load(MIDIFile * midi, const char * filename)
   return r;
 }
 
+void MIDIFile_delete(MIDIFile * midi)
+{
+    fclose(midi->file);
+}
 
 int MIDIHeader_load(MIDIHeader * header, FILE * file)
 {
@@ -198,6 +202,7 @@ void MIDIEventList_delete(MIDIEventList * list)
 
   while (list->head){
     tmp = list->head->next;
+    free(list->head->ev.data);
     free(list->head);
     list->head = tmp;
   }
