@@ -36,7 +36,7 @@ int VLV_read(FILE * buf, uint32_t * val, int * bytes_read)
 
     *val = ((*val << 7) | (byte % 128));
 
-    // if ((byte & 0x80) == 0x00){
+    if ((byte & 0x80) == 0x00){
       if (bytes_read != NULL)
         *bytes_read = i + 1;
       return SUCCESS;
