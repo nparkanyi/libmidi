@@ -168,7 +168,7 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file);
 //returns a factor that converts delta times to milliseconds,
 // tempo in microseconds per quarter note (will be ignored if using timecodes).
 // You must get a new conversion factor after any tempo change event.
-float MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo);
+uint32_t MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo);
 
 MIDIEventList * MIDIEventList_create();
 MIDIEventIterator MIDIEventList_get_start_iter(MIDIEventList * list);

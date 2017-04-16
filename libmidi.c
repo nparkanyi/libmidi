@@ -99,15 +99,15 @@ int MIDIHeader_load(MIDIHeader * header, FILE * file)
 }
 
 
-float MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo)
+uint32_t MIDIHeader_getTempoConversion(MIDIHeader * header, uint32_t tempo)
 {
   if ((header->time_div & 0x8000) == 0){
     //metrical timing
-    return 1.0f / (header->time_div & 0x7FFF) //quarter notes per tick
-           * tempo //microseconds per quarter note
-           / 1000.0f; //microseconds per millisecond
+    return (uint32_t)(tempo //microseconds per quarter note
+                      / (header->time_div & 0x7FFF) //ticks per quarter note
+                      / 1000.0f); //microseconds per millisecond
   } else {
-    return 1.0f;
+    return 1;
   }
 }
 
