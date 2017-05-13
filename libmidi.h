@@ -183,7 +183,10 @@ int MIDIEventList_insert(MIDIEventList * list, MIDIEventIterator iter,
 int MIDIEventList_append(MIDIEventList * list, MIDIEvent ev);
 void MIDIEventList_delete(MIDIEventList * list);
 
+/* loads the next track in the file */
 int MIDITrack_load(MIDITrack * track, FILE * file);
+/* skip over one track */
+int MIDITrack_skip(FILE * file);
 int MIDITrack_load_events(MIDITrack * track, FILE * file);
 int MIDITrack_add_channel_event(MIDITrack * track,
                                 uint8_t type, uint8_t channel,

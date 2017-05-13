@@ -238,6 +238,28 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
 }
 
 
+int MIDITrack_skip(FILE * file)
+{
+    uint32_t size;
+    char * name = "MTrk";
+    char name_check[4];
+    int i;
+
+    if (fread(name_check, sizeof(uint8_t), 4, file) < 1)
+        return FILE_IO_ERROR;
+    for (i = 0; i < 4; i++){
+        if (name_check[i] != name[i])
+            return FILE_INVALID;
+    }
+    if (fread(&size, sizeof(uint32_t), 1, file) < 1)
+        return FILE_IO_ERROR;
+    if (fseek(file, size, SEEK_CUR))
+        return FILE_INVALID;
+
+    return SUCCESS;
+}
+
+
 float hour_byte_to_fps(uint8_t byte)
 {
   uint8_t rate = byte >> 5; //remove all but the rate bits
