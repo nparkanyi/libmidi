@@ -200,6 +200,8 @@ void MIDIEventList_delete(MIDIEventList * list)
 {
   MIDIEventNode * tmp;
 
+  if (!list) return;
+
   while (list->head){
     tmp = list->head->next;
     free(list->head->ev.data);
