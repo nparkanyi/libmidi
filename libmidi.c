@@ -259,9 +259,7 @@ int MIDITrack_skip(FILE * file)
     
     if (fseek(file, size, SEEK_CUR) != 0)
         return FILE_INVALID;
-    c = fgetc(file);
-    assert(c == 'M');
-    ungetc(c, file);
+
     return SUCCESS;
 }
 
