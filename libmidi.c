@@ -4,6 +4,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "libmidi.h"
 
 //convert big-endian data to little endian in-place, does nothing on BE host
@@ -214,7 +215,7 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
   int i;
   char * name = "MTrk";
 
-  if (fread(&track->header.id, sizeof(uint8_t), 4, file) < 1)
+  if (fread(&track->header.id, sizeof(uint8_t), 4, file) < 4)
 	return FILE_IO_ERROR;
   if (fread(&track->header.size, sizeof(uint32_t), 1, file) < 1)
     return FILE_IO_ERROR;
@@ -241,11 +242,12 @@ int MIDITrack_load(MIDITrack * track, FILE * file)
 int MIDITrack_skip(FILE * file)
 {
     uint32_t size;
+    unsigned char c;
     char * name = "MTrk";
     char name_check[4];
     int i;
 
-    if (fread(name_check, sizeof(uint8_t), 4, file) < 1)
+    if (fread(name_check, sizeof(uint8_t), 4, file) < 4)
         return FILE_IO_ERROR;
     for (i = 0; i < 4; i++){
         if (name_check[i] != name[i])
@@ -253,9 +255,13 @@ int MIDITrack_skip(FILE * file)
     }
     if (fread(&size, sizeof(uint32_t), 1, file) < 1)
         return FILE_IO_ERROR;
-    if (fseek(file, size, SEEK_CUR))
+    be_to_le(&size, sizeof(uint32_t));
+    
+    if (fseek(file, size, SEEK_CUR) != 0)
         return FILE_INVALID;
-
+    c = fgetc(file);
+    assert(c == 'M');
+    ungetc(c, file);
     return SUCCESS;
 }
 
