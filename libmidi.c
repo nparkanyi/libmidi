@@ -71,7 +71,7 @@ void MIDIFile_delete(MIDIFile * midi)
 int MIDIHeader_load(MIDIHeader * header, FILE * file)
 {
   int i;
-  char * name = "MThd";
+  char const * name = "MThd";
 
   if (fread(&header->id, sizeof(uint8_t), 4, file) < 1)
     return FILE_INVALID;
@@ -215,7 +215,7 @@ void MIDIEventList_delete(MIDIEventList * list)
 int MIDITrack_load(MIDITrack * track, FILE * file)
 {
   int i;
-  char * name = "MTrk";
+  char const * name = "MTrk";
 
   if (fread(&track->header.id, sizeof(uint8_t), 4, file) < 4)
 	return FILE_IO_ERROR;
@@ -245,7 +245,7 @@ int MIDITrack_skip(FILE * file)
 {
     uint32_t size;
     unsigned char c;
-    char * name = "MTrk";
+    char const * name = "MTrk";
     char name_check[4];
     int i;
 
