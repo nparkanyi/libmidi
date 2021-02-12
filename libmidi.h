@@ -5,6 +5,10 @@
 #ifndef LIBMIDI_H
 #define LIBMIDI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -198,5 +202,9 @@ int MIDITrack_add_meta_event(MIDITrack * track, uint32_t delta, MetaType type,
 void MIDITrack_delete_events(MIDITrack * track);
 
 unsigned long SMPTE_to_milliseconds(SMPTEData smpte);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
